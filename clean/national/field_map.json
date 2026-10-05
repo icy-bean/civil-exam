@@ -1,0 +1,47 @@
+{
+  "header_row": 1,
+  "verified_years": ["2024", "2025", "2026"],
+  "source_file": "raw/national/{year}/position_all.xlsx",
+  "sheets_agency_class": {
+    "中央党群机关": "party_mass_central",
+    "中央国家行政机关（本级）": "state_org_central",
+    "中央国家行政机关省级以下直属机构": "subcentral_agency",
+    "中央国家行政机关参照公务员法管理事业单位": "public_managed"
+  },
+  "columns": {
+    "部门代码": "dept_code",
+    "部门名称": "dept_name",
+    "用人司局": "org_name",
+    "机构性质": "org_nature",
+    "招考职位": "position_name",
+    "职位属性": "position_attr",
+    "职位分布": "position_distribution",
+    "职位简介": "position_intro",
+    "职位代码": "position_code",
+    "机构层级": "org_level",
+    "考试类别": "exam_category",
+    "招考人数": "headcount",
+    "专业": "major_raw",
+    "学历": "education_raw",
+    "学位": "degree_raw",
+    "政治面貌": "politics_raw",
+    "基层工作最低年限": "grassroots_raw",
+    "服务基层项目工作经历": "base_project_raw",
+    "是否在面试阶段组织专业能力测试": "interview_test_raw",
+    "面试人员比例": "interview_ratio",
+    "工作地点": "work_location",
+    "落户地点": "household_location",
+    "备注": "remarks",
+    "部门网站": "dept_website",
+    "咨询电话1": "phone1",
+    "咨询电话2": "phone2",
+    "咨询电话3": "phone3"
+  },
+  "notes": [
+    "职位表无独立年龄列：年龄要求以当年公告默认口径为准（一般 35 周岁以下，应届硕士/博士放宽到 40），部分岗位在备注列单独限定，clean 脚本会解析备注中的年龄写入 age_min/age_max。",
+    "专业列混合本科/研究生目录，单元格内含学科代码+名称（如 0809电子科学与技术、0807电子信息类），clean 脚本抽取为 major_codes（分号连接的 code_name 对）。",
+    "税务系统岗位的专业匹配只认《税务系统年度专业参考目录》，见 clean/catalog/tax_major.csv。",
+    "2027 年新表发布后：核对表头与本映射的差异，只改本文件，不改脚本。"
+  ],
+  "report_file_convention": "{year}_report.csv（进面分数数据链，每年 1-3 月面试季更新，暂未建）"
+}

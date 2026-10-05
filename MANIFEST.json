@@ -1,0 +1,108 @@
+{
+  "updated_at": "2026-10-06",
+  "latest_position_year": 2026,
+  "items": [
+    {
+      "path": "clean/catalog/major_bachelor.csv",
+      "bytes": 63130,
+      "sha256": "e67f088dc2b99b3214f1ff36aafdb16438340f35d4c6f86b8cef6577fbda6251",
+      "rows": 940
+    },
+    {
+      "path": "clean/catalog/tax_major.csv",
+      "bytes": 31236,
+      "sha256": "3e4fb3f4b0eadd1deb028a69afdd8806a539bedce796cad4f4b2f621eb223e85",
+      "rows": 852
+    },
+    {
+      "path": "clean/national/2024_position.csv",
+      "bytes": 15495752,
+      "sha256": "6def28acc4d6e768d47a63cea67bfd16c3c2fe88eaff225f00eebf0e705cd09c",
+      "rows": 25133
+    },
+    {
+      "path": "clean/national/2025_position.csv",
+      "bytes": 17395726,
+      "sha256": "37ce28692019bf2591adb07aec1a25a08e82575370f5f695fa42fc8d16f4ae17",
+      "rows": 28306
+    },
+    {
+      "path": "clean/national/2026_position.csv",
+      "bytes": 17419979,
+      "sha256": "33c4550e5b8e5330834c1874d2f723928969b69968c11900fa86f9b32283b5c7",
+      "rows": 28532
+    },
+    {
+      "path": "clean/national/field_map.json",
+      "bytes": 2294,
+      "sha256": "8ebdb592f463d4da0016d1eba36a930b6dde67ebf4ef6d4c8c8f33ac315b7380",
+      "rows": null
+    },
+    {
+      "path": "raw/catalog/major_bachelor_2025.xlsx",
+      "bytes": 49332,
+      "sha256": "5169b40e4f6dcfe0d6c713158381051de37f7c9e7f5071496d2439701bc780b0",
+      "rows": null
+    },
+    {
+      "path": "raw/catalog/source.txt",
+      "bytes": 878,
+      "sha256": "48ea9fcd6bcb31869a1b0af9f52423556191562f420bae4f3779cacd0c41dd9b",
+      "rows": null
+    },
+    {
+      "path": "raw/catalog/tax_major_2026_notice.html",
+      "bytes": 131452,
+      "sha256": "0918ea17bbb32d4e8e6c2b6f63f6e514cf357a4746053ff3492123dd8f32903f",
+      "rows": null
+    },
+    {
+      "path": "raw/national/2024/position_all.xlsx",
+      "bytes": 2514366,
+      "sha256": "6478351593f32b5147c165fcfd430147a56ca0c1f28fe0c70ffc7daa10cb39fc",
+      "rows": null
+    },
+    {
+      "path": "raw/national/2024/source.txt",
+      "bytes": 356,
+      "sha256": "be90b768b221ea313332484191cf3db450744d3ddda73db9c8e6e77a4c800083",
+      "rows": null
+    },
+    {
+      "path": "raw/national/2025/position_all.xlsx",
+      "bytes": 2746935,
+      "sha256": "c8aa320985e4886a1af9c77b4e673c4751c4812fe1346a0fdc683b7bafa72601",
+      "rows": null
+    },
+    {
+      "path": "raw/national/2025/source.txt",
+      "bytes": 354,
+      "sha256": "32625387a0f2d67c43e58dbb8747ba25b960ee729c4ef326318490613b337751",
+      "rows": null
+    },
+    {
+      "path": "raw/national/2026/position_all.xlsx",
+      "bytes": 2725328,
+      "sha256": "cc459db5aa75f94eccaee4c5d913e7356c742f1c9bc5a914d7703a1c743f1d26",
+      "rows": null
+    },
+    {
+      "path": "raw/national/2026/source.txt",
+      "bytes": 495,
+      "sha256": "71c26f6af4a7a90340ad542b7af15bc33a427db9d857c548e879247b6eb52a1e",
+      "rows": null
+    },
+    {
+      "path": "ref/region_treatment.csv",
+      "bytes": 1485,
+      "sha256": "0e40317aa8659e80b2bc949123fcd1b41e74aec98435ba30b4aa67f8a100a68f",
+      "rows": 69
+    },
+    {
+      "path": "ref/system_treatment.csv",
+      "bytes": 1060,
+      "sha256": "b107d4bf62603c95e9562f5a9a2714fdcfa284f426e8711eab600379b1a37efc",
+      "rows": 23
+    }
+  ]
+}

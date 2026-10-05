@@ -1,0 +1,34 @@
+{
+  "hard": {
+    "gender": "男",
+    "birth": "2001-06",
+    "politics": "共青团员",
+    "education": "本科",
+    "degree": "学士",
+    "fresh": true,
+    "graduate_year": 2027,
+    "grassroots_years": 0,
+    "majors": ["软件工程"],
+    "major_level": "本科",
+    "cet4": 0,
+    "cet6": 0,
+    "base_project_eligible": false,
+    "hukou_province": "广东",
+    "base_locations": ["广东肇庆"]
+  },
+  "intents": {
+    "near_home": 9,
+    "treatment": 7,
+    "unit": {"weight": 0, "keywords": []},
+    "system": {"weight": 6, "keywords": ["税务"]},
+    "region": {"weight": 8, "include": ["广东"], "exclude": ["新疆", "西藏"]},
+    "level": {"weight": 4, "prefer": "县（区）级及以下"}
+  },
+  "_说明": {
+    "hard.politics": "中共党员|中共预备党员|共青团员|群众",
+    "hard.education": "大专|本科|硕士研究生|博士研究生",
+    "hard.major_level": "本科用教育部目录映射，研究生专业直接按名称匹配",
+    "intents.*": "权重 1-10，0 或缺省 = 不参与；unit/system 的 keywords 匹配部门与职位属性；region.exclude 是硬排除",
+    "intents.level.prefer": "中央|省（副省）级|市（地）级|县（区）级及以下，可填列表"
+  }
+}

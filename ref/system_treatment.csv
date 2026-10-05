@@ -1,0 +1,24 @@
+keyword,system_class,tier,note
+税务,tax,8,全国统一待遇规范 + 地区津贴；系统体量大
+海关,customs,8,关衔津贴 + 缉私补贴
+海事,maritime,7,海事津贴
+金融监管,finance_reg,9,金融监管总局系统；津贴高
+证监会,csrc,9,证监系统待遇高
+银保监,finance_reg,9,原银保监系统
+人民银行,pboc,9,人行系统
+铁路公安,rail_police,7,警衔津贴 + 铁路补贴
+公安机关人民警察职位,police,7,警衔津贴（按职位属性匹配）
+边防检查,immigration,7.5,移民管理系统；执勤补贴
+移民管理,immigration,7.5,移民管理系统；执勤补贴
+民航,civil_aviation,7,民航系统补贴
+通信管理局,telecom,7,行业监管系统
+邮政管理局,post,6.5,
+气象局,meteorology,5.5,
+调查总队,survey,6,统计局调查总队
+统计局,survey,6,
+审计,audit,6.5,
+水利,water,6,流域机构
+国家统计局,survey,6,
+党群中枢,party_central,8,中央党群机关兜底
+部委,state_central,8.5,中央国家行政机关本级兜底
+参公,can_gong,6,参公管理事业单位兜底
