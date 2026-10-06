@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "skill" / "scripts"))
-import guokao_run as gr  # noqa: E402
+import engine as gr  # noqa: E402
 
 Row = namedtuple("Row", "dept_name major_raw major_codes")
 

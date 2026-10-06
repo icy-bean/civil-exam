@@ -15,7 +15,6 @@ from pathlib import Path
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
-FIELD_MAP = json.loads((ROOT / "clean" / "national" / "field_map.json").read_text(encoding="utf-8"))["columns"]
 PROVINCES = [
     "北京市", "天津市", "上海市", "重庆市", "河北省", "山西省", "内蒙古自治区", "辽宁省",
     "吉林省", "黑龙江省", "江苏省", "浙江省", "安徽省", "福建省", "江西省", "山东省",
@@ -145,6 +144,11 @@ class Treatment:
         return rkey, rtier, scls, stier, total
 
 
+def _field_map() -> dict:
+    """表头映射惰性加载（import 本模块不应强依赖数据文件）。"""
+    return json.loads((ROOT / "clean" / "national" / "field_map.json").read_text(encoding="utf-8"))["columns"]
+
+
 def clean_year(year: str) -> pd.DataFrame:
     f = ROOT / "raw" / "national" / year / "position_all.xlsx"
     xl = pd.ExcelFile(f)
@@ -153,7 +157,7 @@ def clean_year(year: str) -> pd.DataFrame:
         df = xl.parse(sheet, header=1)
         df["agency_class"] = SHEET_CLASS.get(sheet, sheet)
         frames.append(df)
-    raw = pd.concat(frames, ignore_index=True).rename(columns=FIELD_MAP)
+    raw = pd.concat(frames, ignore_index=True).rename(columns=_field_map())
 
     tr = Treatment()
     recs = []

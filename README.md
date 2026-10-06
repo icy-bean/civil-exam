@@ -1,7 +1,7 @@
-# guokao — 国考选岗 AI Skill
+# civil-exam — 国考选岗 AI Skill
 
 **把 2 万行的官方职位表 + 你的个人情况，变成一份「能报什么、报哪个最好、为什么」的岗位清单。**
-以 `/guokao` 指令（或一句"帮我看看国考有什么岗位适合我"）在 [ZCode](https://zcode.ai) 中触发，跑完交付 xlsx 岗位清单 + 选岗报告。
+在任何支持 Agent Skills 标准的工具（Claude Code、Codex、ZCode 等）中以 `/civil-exam` 触发，或直接说一句"帮我看看国考有什么岗位适合我"；跑完交付 xlsx 岗位清单 + 选岗报告。
 
 ## 它做什么
 
@@ -24,13 +24,13 @@
 - **数据完整性链**：MANIFEST.json 记录全部数据件 SHA256，本地缺失自动从远端同步并逐件校验——换机器零克隆可用。
 - **工程化兜底**：29 条规则单测、新表入库门禁（表头 diff/行数量级/空值率）、CSV 记录级行数统计。
 
-## 使用步骤（ZCode 用户，约 5 分钟）
+## 使用步骤（约 5 分钟）
 
-1. **安装 skill**：克隆本仓库，把 `skill/` 目录拷贝为 `~/.agents/skills/guokao/`（Windows 即 `C:\Users\<你>\.agents\skills\guokao\`）。
+1. **安装 skill**：克隆本仓库，把 `skill/` 目录拷贝为 `~/.agents/skills/civil-exam/`（Windows 即 `C:\Users\<你>\.agents\skills\civil-exam\`）。
 2. **配数据源（二选一）**：
    - 离线优先：`data_source.json` 的 `local_path` 填本仓库克隆路径；
-   - 零克隆：`local_path` 留空，引擎自动从 GitHub 同步约 50MB 清洗件到 `~/.guokao/data`（开箱即用默认）。
-3. **触发**：新开会话说「帮我看看国考有什么岗位适合我」或输入 `/guokao`。
+   - 零克隆：`local_path` 留空，引擎自动从 GitHub 同步约 50MB 清洗件到 `~/.civil-exam/data`（开箱即用默认）。
+3. **触发**：新开会话说「帮我看看国考有什么岗位适合我」或输入 `/civil-exam`。
 4. **填画像**：skill 会给出一段可整段复制的模板，填好发回（已知项预填、不适用删行）；意向权重给不出就选预设画像（求稳/离家近优先/待遇优先）。
 5. **确认 → 出结果**：回显确认后引擎运行，拿到 xlsx + 报告；聊天里的推荐都带**职位代码**，可回官方原表直接回查。
 
@@ -39,7 +39,7 @@
 ## 引擎独立用法（不用模型也能跑）
 
 ```bash
-python skill/scripts/guokao_run.py --profile profile.json --year 2026 --out 输出目录
+python skill/scripts/engine.py --profile profile.json --year 2026 --out 输出目录
 ```
 
 `profile.json` 结构见 `skill/assets/profile_template.json`。

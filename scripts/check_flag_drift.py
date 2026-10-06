@@ -20,7 +20,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.stdout.reconfigure(encoding="utf-8")
 sys.path.insert(0, str(ROOT / "skill" / "scripts"))
-from guokao_run import RESTRICTION_RX, UNLIMITED_PHRASES_RX  # noqa: E402  与引擎共用同一套哨兵正则
+from engine import RESTRICTION_RX, UNLIMITED_PHRASES_RX  # noqa: E402  与引擎共用同一套哨兵正则
 
 
 def year_stats(csv_path: Path) -> dict:

@@ -1,6 +1,6 @@
 ---
-name: guokao
-description: 国考选岗助手：基于官方职位表做硬性条件过滤 + 个性化意向加权打分排序，交付 xlsx 岗位清单与选岗报告。当用户提到国考、公务员考试选岗、报岗、职位表筛选、能报什么岗位、/guokao 时使用——即使用户只是随口问"国考有什么岗位适合我"也应触发。
+name: civil-exam
+description: 国考选岗助手：基于官方职位表做硬性条件过滤 + 个性化意向加权打分排序，交付 xlsx 岗位清单与选岗报告。当用户提到国考、公务员考试选岗、报岗、职位表筛选、能报什么岗位、/civil-exam 时使用——即使用户只是随口问"国考有什么岗位适合我"也应触发。
 ---
 
 # 国考选岗助手
@@ -12,7 +12,7 @@ description: 国考选岗助手：基于官方职位表做硬性条件过滤 + �
 读 skill 目录下的 `data_source.json`：
 
 - `local_path` 非空：`$DATA` = 该路径，检查 `$DATA/MANIFEST.json` 与 `$DATA/clean/national/{year}_position.csv` 存在。
-- `local_path` 为空：用户机器上没有本地仓库，**不要做任何前置检查**，直接进入第 5 步运行引擎——引擎会自动从 `remote_manifest_urls` 同步清洗件到 `~/.guokao/data`（首次约 50MB，同步进度会打在 stdout）。
+- `local_path` 为空：用户机器上没有本地仓库，**不要做任何前置检查**，直接进入第 5 步运行引擎——引擎会自动从 `remote_manifest_urls` 同步清洗件到 `~/.civil-exam/data`（首次约 50MB，同步进度会打在 stdout）。
 
 当年数据缺失由引擎统一判定并硬失败（exit 2 + JSON 错误信息）。**若引擎报"{year} 年度职位表尚未收录"：原样转告用户"官方约每年 10 月中旬发布 {year} 年度职位表，请先更新数据源，或改用已有年份（如 {latest}）做演练"，绝不拿旧年份表冒充当年分析**——报错岗比不报更糟。
 
@@ -69,10 +69,10 @@ description: 国考选岗助手：基于官方职位表做硬性条件过滤 + �
 ## 第 5 步：运行引擎
 
 ```bash
-python "<skill目录>/scripts/guokao_run.py" --profile "<工作目录>/profile.json" --year 2027 --out "<工作目录>"
+python "<skill目录>/scripts/engine.py" --profile "<工作目录>/profile.json" --year 2027 --out "<工作目录>"
 ```
 
-引擎输出（stdout 是 JSON 统计：漏斗数字、Top10、需人工确认数）：`guokao_{year}_结果.xlsx` + `guokao_{year}_报告.md`。
+引擎输出（stdout 是 JSON 统计：漏斗数字、Top10、需人工确认数）：`civil_exam_{year}_结果.xlsx` + `civil_exam_{year}_报告.md`。
 
 **你必须在交付前读 stdout 的统计**：核对「原始总数 → 硬过滤后 → 需人工确认」数字合理，若可报岗位为 0，先检查是画像过严还是引擎排除原因统计，向用户如实报告主要原因分布。
 

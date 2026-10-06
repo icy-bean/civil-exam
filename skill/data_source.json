@@ -1,5 +1,5 @@
 {
   "local_path": "",
-  "remote_manifest_urls": ["https://raw.githubusercontent.com/icy-bean/guokao/main/MANIFEST.json"],
-  "note": "开箱即用（远端模式）：local_path 留空，引擎自动从 remote_manifest_urls 同步清洗件到 ~/.guokao/data，逐件 SHA256 校验。若你克隆了本仓库，把 local_path 填成本地克隆路径即可离线使用；可追加私有服务器地址作为兜底。"
+  "remote_manifest_urls": ["https://raw.githubusercontent.com/icy-bean/civil-exam/main/MANIFEST.json"],
+  "note": "开箱即用（远端模式）：local_path 留空，引擎自动从 remote_manifest_urls 同步清洗件到 ~/.civil-exam/data，逐件 SHA256 校验。若你克隆了本仓库，把 local_path 填成本地克隆路径即可离线使用；可追加私有服务器地址作为兜底。"
 }
