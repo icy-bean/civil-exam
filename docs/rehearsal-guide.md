@@ -6,7 +6,7 @@
 
 - **新开一个全新的 ZCode 会话**做测试，不要在开发会话里继续——避免上下文"剧透"影响触发测试。
 - 新建一个空目录作为工作目录（如 `D:\guokao_test\`），运行产物会落在这里。
-- 确认 `C:\Users\<你>\.agents\skills\guokao\data_source.json` 的 local_path 指向 gov-exam-data 仓库。
+- 数据源就绪：本地克隆了本仓库就把 `data_source.json` 的 local_path 指向克隆目录；留空则走远端自动同步（见场景 E）。
 
 ## 1. 场景 A：触发 + 画像收集
 

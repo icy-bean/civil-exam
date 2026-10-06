@@ -1,87 +1,68 @@
-# gov-exam-data — 公务员考试选岗助手（skill + 数据仓库）
+# guokao — 国考选岗 AI Skill
 
-一个开源的**国考选岗 AI Skill（/guokao）** 及其配套数据仓库：基于官方职位表做
-**硬性条件布尔过滤 → 个性化意向加权打分 → 带理由交付**，产出 xlsx 岗位清单 + 选岗报告。
-架构上可扩展省考/联考（目录名全 ASCII，新考试加一级目录即可）。
+**把 2 万行的官方职位表 + 你的个人情况，变成一份「能报什么、报哪个最好、为什么」的岗位清单。**
+以 `/guokao` 指令（或一句"帮我看看国考有什么岗位适合我"）在 [ZCode](https://zcode.ai) 中触发，跑完交付 xlsx 岗位清单 + 选岗报告。
 
-设计原则：**模型只负责对话与解读，过滤/打分/报告全部由确定性脚本完成**，杜绝逐行幻觉。
+## 它做什么
 
-## 仓库结构
+国考职位表一年 2 万+ 岗位，藏在 4 个工作表、27 列、备注里无数隐藏条件后面。本 skill 走一条固定流水线：
 
 ```
-gov-exam-data/
-├── MANIFEST.json          # 数据唯一入口：所有数据件 + SHA256 + 行数 + 更新时间
-├── raw/                   # 官方原始件（原封不动，随附 source.txt 标注来源与日期）
-│   ├── national/          # 国考职位表，按年分目录（2024/2025/2026...）
-│   └── catalog/           # 专业目录（教育部本科目录 2025 版、税务系统 2026 目录）
-├── clean/                 # 清洗件：运行时直接读，字段归一化
-│   ├── national/          # {year}_position.csv + field_map.json（换年只改映射）
-│   └── catalog/           # major_bachelor.csv / tax_major.csv（双轨专业匹配）
-├── ref/                   # 参考评分表（粗评估口径，改档位只改表不改代码）
-│   ├── system_treatment.csv   # 系统类别 → 待遇档（关键词匹配）
-│   └── region_treatment.csv   # 省/市 → 地区档（计划单列市覆盖行）
-├── scripts/               # 数据管线：清洗 + manifest 生成
-└── skill/                 # /guokao skill 源码（SKILL.md + 运行引擎 + 画像模板）
+官方职位表(2024-2026 真实数据)
+   ↓  硬性条件过滤：性别/年龄/学历学位/政治面貌/基层年限/项目经历/应届/四六级/专业/备注隐藏约束
+   ↓  意向加权打分：离家近·待遇·指定单位·系统偏好·地域·层级（1-10 权重）
+   ↓  带理由排序交付：xlsx（可报全量+Top50+历史画像+落选统计）+ md 报告（漏斗/Top10/报名提醒/需人工确认）
 ```
 
-## 安装（ZCode）
+## 为什么可靠（设计要点）
 
-1. 把 `skill/` 拷贝为用户技能目录：`~/.agents/skills/guokao/`（Windows 即 `C:\Users\<你>\.agents\skills\guokao\`）。
-2. 编辑 `skill/data_source.json`：
-   - 本地用法：`local_path` 填本仓库的本地路径（克隆即含全部数据）；
-   - 轻量用法：`local_path` 留空，引擎会自动从 `remote_manifest_urls` 拉取 MANIFEST 并同步 `clean/`+`ref/` 到 `~/.guokao/data`，逐件 SHA256 校验。
-3. 在 ZCode 里说"帮我选国考岗位"或 `/guokao` 即可。
+- **确定性引擎**：模型只负责对话与解读，2 万行岗位的过滤与打分全部由 Python 完成，每个数字可复核——不存在"AI 觉得你适合"。
+- **真实官方数据**：2024-2026 三年职位表 + 双专业目录（教育部本科 2025 版、税务系统 2026 版），每个原始件带来源与下载日期。
+- **备注隐藏约束识别**：限性别/应届/四六级/户籍/服务年限/项目经历等藏在备注里的条件正则打标；配**双哨兵**——引擎侧"限定表述未被识别→强制人工确认"，年度侧"flag 分布漂移→报警"（哨兵首日实战即修复 5,200 条性别限定漏检）。
+- **税务双目录硬门**：税务岗只认税务系统专用目录，目录外专业直接拦截，不会给你"看似能报"的岗位。
+- **待遇粗评估**：地区档×0.6＋系统档×0.4 的预置评分表（`ref/` 下两张 CSV，改档位不改代码），报告强制标注口径。
+- **数据完整性链**：MANIFEST.json 记录全部数据件 SHA256，本地缺失自动从远端同步并逐件校验——换机器零克隆可用。
+- **工程化兜底**：29 条规则单测、新表入库门禁（表头 diff/行数量级/空值率）、CSV 记录级行数统计。
 
-## 运行引擎（不经过模型也可用）
+## 使用步骤（ZCode 用户，约 5 分钟）
+
+1. **安装 skill**：克隆本仓库，把 `skill/` 目录拷贝为 `~/.agents/skills/guokao/`（Windows 即 `C:\Users\<你>\.agents\skills\guokao\`）。
+2. **配数据源（二选一）**：
+   - 离线优先：`data_source.json` 的 `local_path` 填本仓库克隆路径；
+   - 零克隆：`local_path` 留空，引擎自动从 GitHub 同步约 50MB 清洗件到 `~/.guokao/data`（开箱即用默认）。
+3. **触发**：新开会话说「帮我看看国考有什么岗位适合我」或输入 `/guokao`。
+4. **填画像**：skill 会给出一段可整段复制的模板，填好发回（已知项预填、不适用删行）；意向权重给不出就选预设画像（求稳/离家近优先/待遇优先）。
+5. **确认 → 出结果**：回显确认后引擎运行，拿到 xlsx + 报告；聊天里的推荐都带**职位代码**，可回官方原表直接回查。
+
+完整演示流程（含冷启动、负向测试）见 [docs/rehearsal-guide.md](docs/rehearsal-guide.md)。
+
+## 引擎独立用法（不用模型也能跑）
 
 ```bash
 python skill/scripts/guokao_run.py --profile profile.json --year 2026 --out 输出目录
 ```
 
-`profile.json` 结构见 `skill/assets/profile_template.json`：硬性条件（性别/年龄/专业/学历/
-应届/四六级/基层年限…）+ 意向权重（离家近/待遇/指定单位/系统偏好/地域/层级，1-10）。
+`profile.json` 结构见 `skill/assets/profile_template.json`。
 
-## 数据更新（每年 10 月中旬新表发布，人工采集 + 门禁校验）
+## 数据更新（维护者，每年 10 月中旬新表发布）
 
-> 采集一年只做一次且必须人工确认文件正确性，因此刻意不自动化下载；自动化放在"文件入库前"的门禁上。
+> 采集一年一次且必须人工确认文件正确性，刻意不自动化下载；自动化放在入库门禁上。
 
-1. 人工下载新表存入 `raw/national/{year}/position_all.xlsx`（来源记入同目录 `source.txt`）；
-2. 跑门禁：`python scripts/validate_field_map.py {year}` —— 自动核对 sheet 名/表头行/列名 diff/行数量级/关键列空值率，
-   **有差异按报告修 `clean/national/field_map.json`（换年只改映射不改代码），直到结论为通过**；
-3. `python scripts/clean_positions.py {year}` → `python scripts/check_flag_drift.py`（flag 漂移哨兵：
-   备注限定类 flag 数量骤降/归零或"未识别限定表述"暴增 = 新句式漏检信号，人工确认后补正则）
-   → `python scripts/build_manifest.py`；
-4. `python tests/test_clean_rules.py && python tests/test_filter_rules.py` 全绿后提交推送。
-   已安装用户重新跑 skill 时会经 SHA256 校验发现更新。
+1. 人工下载新表放入 `raw/national/{year}/position_all.xlsx`（来源记入 `source.txt`，候选源清单见下）；
+2. `python scripts/validate_field_map.py {year}` —— 门禁：sheet/表头/列名 diff/行数量级/空值率，按报告修 `field_map.json` 直到通过；
+3. `python scripts/clean_positions.py {year}` → `python scripts/check_flag_drift.py`（flag 漂移哨兵）→ `python scripts/build_manifest.py`；
+4. `python tests/test_clean_rules.py && python tests/test_filter_rules.py` 全绿 → 提交推送。
 
-### 候选源登记（人工采集时的入口备忘）
-
-- 国考职位表：官方报名专题 `bm.scs.gov.cn/kl{year}`（JS 渲染，需浏览器）；华图分省直链模式
-  `u3.huatu.com/uploads/soft/{发布月日}/{year}gkzw.xlsx`（历年可用，作为镜像首选）；
-  中公/粉笔分省页为备选。
-- 税务系统专业参考目录：随公告嵌在各省税务局「相关事项通知」正文表格里（如
-  `shanghai.chinatax.gov.cn/xxgk/rsxx/`），非独立附件，用 pandas.read_html 提取。
-- 教育部本科专业目录：教育部备案审批结果公告附件，或检索各省人社/政府网站转载的 xlsx。
-- 原则：** raw 件永远保留原始来源 + 下载日期（source.txt），可追溯、可质疑、可撤换。**
+候选源登记：职位表官方专题 `bm.scs.gov.cn/kl{year}`（JS 渲染），华图分省直链 `u3.huatu.com/uploads/soft/{月日}/{year}gkzw.xlsx` 可作镜像首选；税务目录嵌在各省税务局"相关事项通知"正文表格；教育部目录用备案审批公告附件或政府网转载 xlsx。
 
 ## 口径与边界
 
-- **待遇分是粗评估**：`地区档×0.6 + 系统档×0.4`，基于公开常识编制的 1-10 档位，
-  非实际收入数据，仅用于意向加权排序。档位存于 `ref/`，欢迎按当地实情提 PR 修订。
-- **职位表不含进面分数与报录比**，本仓库不评估录取难度（面试名单数据链每年 1-3 月更新，
-  约定文件名 `{year}_report.csv`，规划中）。
-- 专业为宽匹配：目录类别 + 名称三通道，**税务岗只认税务系统专用目录**（目录外一般不收）。
-- 备注列的隐藏硬约束（限性别/应届/四六级/户籍/服务基层项目/最低服务年限）由脚本正则打标：
-  能机判的硬过滤，不能机判的一律进「需人工确认」，绝不静默放行。
+- **待遇分是粗评估**（地区经济档+系统津贴档），非实际收入，仅供意向排序；
+- **职位表不含进面分数与报录比**，本 skill 不评估录取难度（面试名单数据链每年 1-3 月更新，规划中）；
+- 专业为宽匹配（目录类别+名称多通道），边缘专业以招录机关解释为准；「需人工确认」岗位务必核对备注原文。
 
-## 合规声明
+## 合规
 
-- 代码部分：MIT License。
-- **数据部分不适用 MIT**：国考职位表与专业目录为国家机关公开招录文件，版权归相应机关；
-  本仓库仅作格式整理与聚合（来源与下载日期见各目录 `source.txt`），供个人报考参考，
-  请遵循原发布方条款，勿用于商业变现。
-- 报名前请以官方公告、招考简章与职位表原文为最终依据；专业等资格条件由招录机关负责解释。
-
-## 免责
-
-本项目与任何招录机关无关；分析结果仅供参考，不构成报考建议。
+- 代码：MIT License。
+- **数据不适用 MIT**：职位表与专业目录版权归相应国家机关，本仓库仅作格式整理（来源见各目录 `source.txt`），供个人报考参考，勿用于商业用途。
+- 本项目与任何招录机关无关；报名以官方公告与职位表原文为最终依据。

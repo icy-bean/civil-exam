@@ -1,5 +1,5 @@
 {
-  "local_path": "D:/AppData/.zcode/workspace/default/gov-exam-data",
-  "remote_manifest_urls": ["https://raw.githubusercontent.com/icy-bean/gov-exam-data/main/MANIFEST.json"],
-  "note": "local_path 指向本机 gov-exam-data 克隆；本地 manifest 缺失或换机器时自动从 remote_manifest_urls 同步 clean/ 与 ref/ 到数据目录，逐件 SHA256 校验。可追加私有服务器地址作为兜底。"
+  "local_path": "",
+  "remote_manifest_urls": ["https://raw.githubusercontent.com/icy-bean/guokao/main/MANIFEST.json"],
+  "note": "开箱即用（远端模式）：local_path 留空，引擎自动从 remote_manifest_urls 同步清洗件到 ~/.guokao/data，逐件 SHA256 校验。若你克隆了本仓库，把 local_path 填成本地克隆路径即可离线使用；可追加私有服务器地址作为兜底。"
 }
