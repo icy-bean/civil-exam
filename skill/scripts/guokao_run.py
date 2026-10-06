@@ -39,6 +39,17 @@ FLAG_LABEL = {
     "fresh_only": "仅限应届毕业生", "cert": "要求资格证书", "physical": "需体能测评",
 }
 
+# 哨兵：备注出现这些资格限定表述、却没有任何 flag/年龄解析覆盖 → 可能是新句式漏检，必须人工过目。
+# 只收"漏检会误放行"的词：项目经历类由服务基层项目列兜底、证书/体能仅提示性，均不入哨兵。
+RESTRICTION_RX = re.compile(r"男|女|应届|四级|六级|CET|户籍|生源|周岁")
+# "男女不限"等是放宽而非限定，先剥掉再匹配
+UNLIMITED_PHRASES_RX = re.compile(r"男女不限|不限男女|性别不限|不限性别|不限男|不限女|男女均可")
+
+
+def restriction_uncovered(remark, flags, age_min, age_max) -> bool:
+    text = UNLIMITED_PHRASES_RX.sub("", str(remark or ""))
+    return bool(RESTRICTION_RX.search(text)) and not flags and pd.isna(age_min) and pd.isna(age_max)
+
 
 def fail(msg: str, code: int = 2):
     print(json.dumps({"status": "error", "message": msg}, ensure_ascii=False, indent=2))
@@ -210,6 +221,7 @@ def hard_filter(pos: pd.DataFrame, profile: dict, mprof: tuple):
     default_age_max = 40 if (fresh and edu and edu >= 3) else 35
 
     eligible, excluded, review = [], [], []
+    unflagged_total = 0
     for r in pos.itertuples(index=False):
         reasons = []
 
@@ -278,12 +290,17 @@ def hard_filter(pos: pd.DataFrame, profile: dict, mprof: tuple):
             review.append((r, "household_check", "备注涉户籍/生源限制，需人工核对"))
         if "male_fit" in flags or "female_fit" in flags:
             review.append((r, "gender_fit_note", FLAG_LABEL["male_fit" if "male_fit" in flags else "female_fit"]))
+        # 哨兵：限定表述未被任何规则覆盖 → 新句式漏检风险， fail-visible
+        if restriction_uncovered(r.remarks, flags, r.age_min, r.age_max):
+            unflagged_total += 1
+            if not reasons:
+                review.append((r, "unflagged_restriction", "备注含限定表述但未识别出具体约束：" + str(r.remarks)[:60]))
 
         if reasons:
             excluded.append((r, reasons[0]))
         else:
             eligible.append(r)
-    return eligible, excluded, review
+    return eligible, excluded, review, unflagged_total
 
 
 def major_match(r, names, codes, classes, gates, tax_cats, in_tax_catalog):
@@ -430,7 +447,7 @@ NOTES_OF = ("english4", "english6", "fresh_only", "base_project", "household", "
 
 
 def build_output(rows, excluded, review, profile, year, updated, hist, out_dir: Path, top_n: int,
-                 age: float = 0.0, default_age_max: int = 35, major_unresolved=None):
+                 age: float = 0.0, default_age_max: int = 35, major_unresolved=None, unflagged_total: int = 0):
     out_dir.mkdir(parents=True, exist_ok=True)
     stamp = date.today().isoformat()
     hard = profile["hard"]
@@ -510,7 +527,9 @@ def build_output(rows, excluded, review, profile, year, updated, hist, out_dir: 
           "## 漏斗", "",
           f"- 原始岗位 **{len(rows) + len(excluded)}** 个",
           f"- 硬性条件过滤后可报 **{len(rows)}** 个（落选 {len(excluded)}，明细见 xlsx 落选统计表）",
-          f"- 需人工确认（户籍/边缘年龄等）**{len(review)}** 个，报名前逐条核对备注",
+          f"- 需人工确认（户籍/边缘年龄等）**{len(review)}** 个，报名前逐条核对备注；"
+          f"其中「备注含限定表述但规则未识别」{sum(1 for _, k, _ in review if k == 'unflagged_restriction')} 条"
+          f"（全表共 {unflagged_total} 条，已逐条列入下方样例）",
           "",
           "## Top 10", "",
           "| # | 总分 | 部门 | 职位 | 地点 | 人数 | 核心理由 |",
@@ -524,6 +543,13 @@ def build_output(rows, excluded, review, profile, year, updated, hist, out_dir: 
         n = "；".join(x for x in (note_of(it["row"]), msrv(it["row"])) if x)
         if n:
             md.append(f"- #{it['rank']} {it['row'].dept_name} {it['row'].position_name}：{n}")
+    unflagged_samples = [(r, text) for r, k, text in review if k == "unflagged_restriction"]
+    if unflagged_samples:
+        md += ["", "### 需人工确认样例：备注含限定表述但规则未识别", ""]
+        for r, text in unflagged_samples[:10]:
+            md.append(f"- {r.dept_name} {r.position_name}（{r.work_location}）：{text}")
+        if len(unflagged_samples) > 10:
+            md.append(f"- ……共 {len(unflagged_samples)} 条，全量见 xlsx「可报岗位排序」的报名提醒列")
     if hist_lines:
         md += ["", "## 附：目标部门历年招录画像（仅供参考，不参与排序）", ""]
         for h in hist_lines[:15]:
@@ -547,6 +573,7 @@ def build_output(rows, excluded, review, profile, year, updated, hist, out_dir: 
         "excluded": len(excluded),
         "needs_review": len(review),
         "needs_review_kinds": pd.Series([k for _, k, _ in review]).value_counts().to_dict() if review else {},
+        "unflagged_restricted_total": unflagged_total,
         "profile_warnings": (
             ["按报名口径年龄 {:.1f}，接近公告默认上限 {}，边缘岗位需按公告出生月份口径逐条复核".format(age, default_age_max)
              if default_age_max - age < 0.5 else None] or []),
@@ -584,7 +611,7 @@ def main():
 
     pos, hist, bachelor, tax, updated = load_repo(data_dir, args.year)
     mprof = user_major_profile(profile, bachelor, tax)
-    eligible, excluded, review = hard_filter(pos, profile, mprof)
+    eligible, excluded, review, unflagged_total = hard_filter(pos, profile, mprof)
     kept, dropped = apply_region_exclude(eligible, profile)
     excluded += [(r, "region") for r in dropped]
     rows = score_positions(kept, profile)
@@ -592,7 +619,7 @@ def main():
     age = age_of(profile["hard"]["birth"])
     default_age_max = 40 if (profile["hard"].get("fresh") and EDU_LEVEL.get(profile["hard"]["education"], 0) >= 3) else 35
     build_output(rows, excluded, review, profile, args.year, updated, hist, Path(args.out), args.top,
-                 age, default_age_max, mprof[5])
+                 age, default_age_max, mprof[5], unflagged_total)
 
 
 if __name__ == "__main__":

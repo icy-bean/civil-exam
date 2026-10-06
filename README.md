@@ -48,7 +48,9 @@ python skill/scripts/guokao_run.py --profile profile.json --year 2026 --out 输�
 1. 人工下载新表存入 `raw/national/{year}/position_all.xlsx`（来源记入同目录 `source.txt`）；
 2. 跑门禁：`python scripts/validate_field_map.py {year}` —— 自动核对 sheet 名/表头行/列名 diff/行数量级/关键列空值率，
    **有差异按报告修 `clean/national/field_map.json`（换年只改映射不改代码），直到结论为通过**；
-3. `python scripts/clean_positions.py {year}` → `python scripts/build_manifest.py`；
+3. `python scripts/clean_positions.py {year}` → `python scripts/check_flag_drift.py`（flag 漂移哨兵：
+   备注限定类 flag 数量骤降/归零或"未识别限定表述"暴增 = 新句式漏检信号，人工确认后补正则）
+   → `python scripts/build_manifest.py`；
 4. `python tests/test_clean_rules.py && python tests/test_filter_rules.py` 全绿后提交推送。
    已安装用户重新跑 skill 时会经 SHA256 校验发现更新。
 

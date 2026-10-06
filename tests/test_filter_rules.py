@@ -111,6 +111,21 @@ def test_major_match_unlimited():
     assert ok and tax_ok and matched == "不限专业"
 
 
+# ---- 哨兵：备注限定表述未被规则覆盖 ----
+def test_restriction_uncovered_true():
+    # "限应届毕业生"（无"仅"字）当前规则不打 flag → 必须被哨兵捞出
+    assert gr.restriction_uncovered("限应届毕业生", [], float("nan"), float("nan")) is True
+    # 出现"周岁"但年龄两列都没解析出来 → 新句式漏检
+    assert gr.restriction_uncovered("年龄35周岁左右可放宽", [], float("nan"), float("nan")) is True
+
+def test_restriction_uncovered_false():
+    import pandas as pd
+    assert gr.restriction_uncovered("大学英语四级425分以上", ["english4"], float("nan"), float("nan")) is False
+    assert gr.restriction_uncovered("30周岁以下", [], float("nan"), 30) is False  # 年龄列已解析=已覆盖
+    assert gr.restriction_uncovered("最低服务年限为5年", [], float("nan"), float("nan")) is False  # 服务年限非资格限定
+    assert gr.restriction_uncovered("", [], float("nan"), float("nan")) is False
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failed = 0

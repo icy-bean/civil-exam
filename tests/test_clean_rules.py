@@ -51,6 +51,14 @@ def test_parse_major_k_suffix_and_dedup():
     assert "120203K会计学" in out and out.count("120203K会计学") == 1
 
 
+# ---- 备注性别限定（2026 表出现"，男性，"逗号规格式） ----
+def test_gender_flag_comma_style():
+    assert cp.RX["male_only"].search("面向高校毕业生，男性，本单位不提供宿舍")
+    assert cp.RX["female_only"].search("高校毕业生，女性，本单位不提供宿舍")
+    assert not cp.RX["male_only"].search("男女不限")
+    assert not cp.RX["male_only"].search("男性优先")  # 优先类是软倾向，不当硬限定
+
+
 # ---- 工作地点省市解析 ----
 def test_parse_location_province_city():
     assert cp.parse_location("广东省深圳市") == ("广东", "深圳市")

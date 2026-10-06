@@ -36,8 +36,8 @@ SHEET_CLASS = {
 RX = {
     "english4": re.compile(r"CET-?4|大学英语四级|国家四级|四级(?:英语)?(?:425|成绩)?[^，。;；]*425"),
     "english6": re.compile(r"CET-?6|大学英语六级|国家六级|六级[^，。;；]*425"),
-    "male_only": re.compile(r"限男性|仅限男性"),
-    "female_only": re.compile(r"限女性|仅限女性"),
+    "male_only": re.compile(r"限男性|仅限男性|[，,；;]\s*男性\s*[，,。；;）)]"),
+    "female_only": re.compile(r"限女性|仅限女性|[，,；;]\s*女性\s*[，,。；;）)]"),
     "male_fit": re.compile(r"适合男性"),
     "female_fit": re.compile(r"适合女性"),
     "base_project": re.compile(r"面向([^，。;；]{0,12}(服务基层项目|大学生村官|三支一扶|西部计划|特岗教师)[^，。;；]{0,6})报考|服务基层项目人员|大学生村官|三支一扶|西部计划志愿者?|退役大学生士兵"),
