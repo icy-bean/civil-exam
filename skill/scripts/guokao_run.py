@@ -168,14 +168,14 @@ def user_major_profile(profile: dict, bachelor: pd.DataFrame, tax: pd.DataFrame)
 
 
 def cell_tokens(major_raw: str):
-    """把专业要求单元格拆成词元：剥离'本科为/研究生为'前缀、学科代码、括注。"""
+    """把专业要求单元格拆成词元：剥离'本科为/研究生为'前缀、学科代码、括注与'或'连接词。"""
     if not isinstance(major_raw, str):
         return []
+    text = re.sub(r"(?:本科|研究生|硕士|博士|大专)(?:研究生)?(?:所学专业)?为", "、", major_raw)
+    text = text.replace("或", "、")
     toks = []
-    for p in re.split(r"[、，,;；/\n]+", major_raw):
-        p = p.strip()
-        p = re.sub(r"^(本科|研究生|硕士|博士|大专)(研究生)?(所学专业)?为?", "", p)
-        p = re.sub(r"^\d{2,6}[A-Za-z]?", "", p)
+    for p in re.split(r"[、，,;；/\n]+", text):
+        p = re.sub(r"^\d{2,6}[A-Za-z]?", "", p.strip())
         p = re.split(r"[（(]", p)[0].strip()
         if p:
             toks.append(p)
@@ -326,7 +326,7 @@ def major_match(r, names, codes, classes, gates, tax_cats, in_tax_catalog):
 def loc_match(loc_list, province: str, city: str):
     """返回 (granularity, hit) : 2=同城 1=同省 0=未命中。loc 支持'广东肇庆'/'广东'/'深圳'。"""
     city_n = (city or "").rstrip("市")
-    prov_n = province or ""
+    prov_n = re.sub(r"(?:省|市|壮族自治区|回族自治区|维吾尔自治区|自治区|特别行政区)$", "", province or "")
     best, hit = 0, ""
     for loc in loc_list or []:
         loc = str(loc).strip().rstrip("市")

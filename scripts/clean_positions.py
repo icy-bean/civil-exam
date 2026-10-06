@@ -55,9 +55,12 @@ def parse_major(cell: str) -> str:
     """抽取 (代码,名称) 对 -> '0809电子科学与技术;0812计算机科学与技术'"""
     if not isinstance(cell, str):
         return ""
-    pairs = re.findall(r"(\d{4,6}[A-Za-z]?)\s*([^\d、，,；;/\s]{2,20})", cell)
     out, seen = [], set()
-    for code, name in pairs:
+    for code, name in re.findall(r"(\d{4,6}[A-Za-z]?)\s*([^\d、，,；;/\s]{2,20})", cell):
+        # 名称尾部可能粘上连接词（"计算机类或研究生为"），剥掉再入库
+        name = re.sub(r"(?:或|及|和|为|研究生|本科|大专|博士|硕士|所学专业)+$", "", name)
+        if len(name) < 2:
+            continue
         key = code + name
         if key not in seen:
             seen.add(key)
@@ -66,13 +69,16 @@ def parse_major(cell: str) -> str:
 
 
 def parse_age(remark: str):
-    """解析备注年龄：'18周岁以上...35周岁以下'->(18,35)；'30周岁以下'->(None,30)；'年满23周岁'->(23,None)"""
+    """解析备注年龄：'18周岁以上...35周岁以下'->(18,35)；'30周岁以下'->(None,30)；'不超过28周岁'->(None,28)；'年满23周岁'->(23,None)"""
     if not isinstance(remark, str) or "周岁" not in remark:
         return None, None
     m = re.search(r"(\d{2,3})周岁(?:以上|及以上)?[^，。;；]{0,4}?(\d{2,3})周岁", remark)
     if m and not re.search(r"(\d{2,3})周岁以下", remark[:m.start()] + remark[m.end():]):
         return int(m.group(1)), int(m.group(2))
-    m = re.search(r"(?:不超过|不超过\d+岁|年龄[^，。;；]{0,4})?(\d{2,3})周岁(?:以下|及以下)", remark)
+    m = re.search(r"不超过(\d{2,3})周岁", remark)
+    if m:
+        return None, int(m.group(1))
+    m = re.search(r"(\d{2,3})周岁(?:以下|及以下)", remark)
     if m:
         return None, int(m.group(1))
     m = re.search(r"(\d{2,3})周岁(?:以上|及以上)", remark)

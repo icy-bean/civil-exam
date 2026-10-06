@@ -4,3 +4,11 @@ __pycache__/
 render/
 *_demo/
 demo/
+
+# skill 运行产物与用户画像（含个人敏感信息，严禁入库）
+USER.md
+profile.json
+run_stats.json
+guokao_*.xlsx
+guokao_*.md
+stdout.log

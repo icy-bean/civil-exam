@@ -73,8 +73,8 @@ python "<skill目录>/scripts/guokao_run.py" --profile "<工作目录>/profile.j
 ## 数据更新（每年 10 月中旬新表发布时）
 
 引导用户执行（或替用户执行）：
-1. 下载新表存入 `$DATA/raw/national/{year}/position_all.xlsx`（来源 URL 记入同目录 `source.txt`）。
-2. 在 `$DATA/clean/national/field_map.json` 核对新表表头——有差异只改这个文件。
-3. `python $DATA/scripts/clean_positions.py {year}` → `python $DATA/scripts/build_manifest.py`。
+1. 人工下载新表存入 `$DATA/raw/national/{year}/position_all.xlsx`（来源 URL 记入同目录 `source.txt`）。
+2. 跑门禁 `python $DATA/scripts/validate_field_map.py {year}`：按报告修 `field_map.json`，直到结论通过。
+3. `python $DATA/scripts/clean_positions.py {year}` → `python $DATA/scripts/build_manifest.py` → 跑 `$DATA/tests/` 两套单测全绿。
 
 细节（评分公式、备注规则表、省考扩展、合规口径）见 `references/methodology.md`。

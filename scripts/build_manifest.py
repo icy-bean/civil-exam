@@ -4,6 +4,7 @@
 skill 运行流程: 拉 manifest -> 比对本地位 -> 增量下载 -> SHA256 校验 -> 解析。
 约定: 当年职位表缺失时 manifest 的 latest_position_year 仍是旧年, skill 必须硬失败而非拿旧表当当年用。
 """
+import csv
 import hashlib
 import json
 from datetime import date
@@ -23,10 +24,11 @@ def sha256(p: Path) -> str:
 
 
 def count_rows(p: Path) -> int | None:
+    """按 CSV 记录数统计（带引号的多行备注不算新记录）。"""
     if p.suffix != ".csv":
         return None
-    with p.open("rb") as f:
-        return max(sum(1 for _ in f) - 1, 0)
+    with p.open("r", encoding="utf-8-sig", newline="") as f:
+        return max(sum(1 for _ in csv.reader(f)) - 1, 0)
 
 
 def main():

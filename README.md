@@ -41,12 +41,26 @@ python skill/scripts/guokao_run.py --profile profile.json --year 2026 --out 输�
 `profile.json` 结构见 `skill/assets/profile_template.json`：硬性条件（性别/年龄/专业/学历/
 应届/四六级/基层年限…）+ 意向权重（离家近/待遇/指定单位/系统偏好/地域/层级，1-10）。
 
-## 数据更新（每年 10 月中旬新表发布）
+## 数据更新（每年 10 月中旬新表发布，人工采集 + 门禁校验）
 
-1. 下载新表存入 `raw/national/{year}/position_all.xlsx`（来源记入同目录 `source.txt`）；
-2. 核对 `clean/national/field_map.json` 表头映射——有差异只改这个文件；
+> 采集一年只做一次且必须人工确认文件正确性，因此刻意不自动化下载；自动化放在"文件入库前"的门禁上。
+
+1. 人工下载新表存入 `raw/national/{year}/position_all.xlsx`（来源记入同目录 `source.txt`）；
+2. 跑门禁：`python scripts/validate_field_map.py {year}` —— 自动核对 sheet 名/表头行/列名 diff/行数量级/关键列空值率，
+   **有差异按报告修 `clean/national/field_map.json`（换年只改映射不改代码），直到结论为通过**；
 3. `python scripts/clean_positions.py {year}` → `python scripts/build_manifest.py`；
-4. 提交推送。已安装用户重新跑 skill 时会经 SHA256 校验发现更新。
+4. `python tests/test_clean_rules.py && python tests/test_filter_rules.py` 全绿后提交推送。
+   已安装用户重新跑 skill 时会经 SHA256 校验发现更新。
+
+### 候选源登记（人工采集时的入口备忘）
+
+- 国考职位表：官方报名专题 `bm.scs.gov.cn/kl{year}`（JS 渲染，需浏览器）；华图分省直链模式
+  `u3.huatu.com/uploads/soft/{发布月日}/{year}gkzw.xlsx`（历年可用，作为镜像首选）；
+  中公/粉笔分省页为备选。
+- 税务系统专业参考目录：随公告嵌在各省税务局「相关事项通知」正文表格里（如
+  `shanghai.chinatax.gov.cn/xxgk/rsxx/`），非独立附件，用 pandas.read_html 提取。
+- 教育部本科专业目录：教育部备案审批结果公告附件，或检索各省人社/政府网站转载的 xlsx。
+- 原则：** raw 件永远保留原始来源 + 下载日期（source.txt），可追溯、可质疑、可撤换。**
 
 ## 口径与边界
 

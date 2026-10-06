@@ -16,21 +16,21 @@
     },
     {
       "path": "clean/national/2024_position.csv",
-      "bytes": 15495752,
-      "sha256": "6def28acc4d6e768d47a63cea67bfd16c3c2fe88eaff225f00eebf0e705cd09c",
-      "rows": 25133
+      "bytes": 15514609,
+      "sha256": "b30bc0ac528fa70029842ae06636396a6eb28c110df48b8ddebd797b1e1a2353",
+      "rows": 18948
     },
     {
       "path": "clean/national/2025_position.csv",
-      "bytes": 17395726,
-      "sha256": "37ce28692019bf2591adb07aec1a25a08e82575370f5f695fa42fc8d16f4ae17",
-      "rows": 28306
+      "bytes": 17416525,
+      "sha256": "a5cf8414b1ea5a2e51d187686b285fad617815a60fc61beef29ca8768327edaa",
+      "rows": 20810
     },
     {
       "path": "clean/national/2026_position.csv",
-      "bytes": 17419979,
-      "sha256": "33c4550e5b8e5330834c1874d2f723928969b69968c11900fa86f9b32283b5c7",
-      "rows": 28532
+      "bytes": 17440748,
+      "sha256": "234f3dc2c23435bf261a192b0f5484580ebb066807693e086966b13edb5ee6b9",
+      "rows": 20714
     },
     {
       "path": "clean/national/field_map.json",
