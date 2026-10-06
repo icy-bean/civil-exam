@@ -80,6 +80,9 @@ def try_remote_sync(data_dir: Path, remote_urls: list) -> bool:
             manifest = json.loads(_http_get(u))
             base = u.rsplit("/", 1)[0]
             need = [i for i in manifest.get("items", []) if i["path"].startswith(("clean/", "ref/"))]
+            print(json.dumps({"status": "info",
+                              "message": f"本地无数据，开始从远端同步 {len(need)} 个数据件到 {data_dir}（约50MB，首次需数分钟）"},
+                             ensure_ascii=False), flush=True)
             for item in need:
                 dest = data_dir / item["path"]
                 if dest.exists() and _sha256(dest.read_bytes()) == item["sha256"]:
@@ -461,6 +464,8 @@ def build_output(rows, excluded, review, profile, year, updated, hist, out_dir: 
     # ---- xlsx
     INTENT_CN = {"near_home": "离家近", "treatment": "待遇", "unit": "单位",
                  "system": "系统", "region": "地域", "level": "层级"}
+    AGENCY_CN = {"party_mass_central": "中央党群机关", "state_org_central": "中央国家行政机关（本级）",
+                 "subcentral_agency": "省级以下直属机构", "public_managed": "参公事业单位"}
 
     def rowdict(item):
         r, s = item["row"], item["scores"]
@@ -469,7 +474,8 @@ def build_output(rows, excluded, review, profile, year, updated, hist, out_dir: 
             **{INTENT_CN.get(k, k): round(v, 1) for k, v in s.items()},
             "部门名称": r.dept_name, "用人司局": r.org_name, "职位名称": r.position_name,
             "工作地点": r.work_location, "招考人数": r.headcount, "机构层级": r.org_level,
-            "学历要求": r.education_raw, "政治面貌": r.politics_raw, "职位代码": r.position_code,
+            "学历要求": r.education_raw, "政治面貌": r.politics_raw,
+            "职位代码": r.position_code, "原表工作表": AGENCY_CN.get(r.agency_class, r.agency_class),
             "推荐理由": "；".join(item["reasons"]), "报名提醒": "；".join(x for x in (note_of(r), msrv(r)) if x),
             "专业要求": r.major_raw, "备注": r.remarks,
         }
@@ -532,12 +538,13 @@ def build_output(rows, excluded, review, profile, year, updated, hist, out_dir: 
           f"（全表共 {unflagged_total} 条，已逐条列入下方样例）",
           "",
           "## Top 10", "",
-          "| # | 总分 | 部门 | 职位 | 地点 | 人数 | 核心理由 |",
-          "|---|---|---|---|---|---|---|"]
+          "| # | 总分 | 部门 | 职位 | 职位代码 | 地点 | 人数 | 核心理由 |",
+          "|---|---|---|---|---|---|---|---|"]
     for it in top10:
         r = it["row"]
-        md.append(f"| {it['rank']} | {it['total']} | {r.dept_name} | {r.position_name} | {r.work_location} "
-                  f"| {int(r.headcount) if pd.notna(r.headcount) else '?'} | {'；'.join(it['reasons'])} |")
+        md.append(f"| {it['rank']} | {it['total']} | {r.dept_name} | {r.position_name} | {r.position_code} "
+                  f"| {r.work_location} | {int(r.headcount) if pd.notna(r.headcount) else '?'} "
+                  f"| {'；'.join(it['reasons'])} |")
     md += ["", "### 报名提醒（Top 10 中）", ""]
     for it in top10:
         n = "；".join(x for x in (note_of(it["row"]), msrv(it["row"])) if x)
@@ -582,7 +589,8 @@ def build_output(rows, excluded, review, profile, year, updated, hist, out_dir: 
         "top10": [
             {"rank": it["rank"], "total": it["total"], "dept": it["row"].dept_name,
              "position": it["row"].position_name, "location": it["row"].work_location,
-             "headcount": int(it["row"].headcount) if pd.notna(it["row"].headcount) else None}
+             "headcount": int(it["row"].headcount) if pd.notna(it["row"].headcount) else None,
+             "position_code": it["row"].position_code}
             for it in top10],
         "outputs": {"xlsx": str(xlsx_path), "report": str(md_path)},
     }
