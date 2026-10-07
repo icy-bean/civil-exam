@@ -24,15 +24,22 @@
 - **数据完整性链**：MANIFEST.json 记录全部数据件 SHA256，本地缺失自动从远端同步并逐件校验——换机器零克隆可用。
 - **工程化兜底**：29 条规则单测、新表入库门禁（表头 diff/行数量级/空值率）、CSV 记录级行数统计。
 
-## 使用步骤（约 5 分钟）
+## 使用步骤（约 2 分钟）
 
-1. **安装 skill**：克隆本仓库，把 `skill/` 目录拷贝为 `~/.agents/skills/civil-exam/`（Windows 即 `C:\Users\<你>\.agents\skills\civil-exam\`）。
-2. **配数据源（二选一）**：
-   - 离线优先：`data_source.json` 的 `local_path` 填本仓库克隆路径；
-   - 零克隆：`local_path` 留空，引擎自动从 GitHub 同步约 50MB 清洗件到 `~/.civil-exam/data`（开箱即用默认）。
-3. **触发**：新开会话说「帮我看看国考有什么岗位适合我」或输入 `/civil-exam`。
-4. **填画像**：skill 会给出一段可整段复制的模板，填好发回（已知项预填、不适用删行）；意向权重给不出就选预设画像（求稳/离家近优先/待遇优先）。
-5. **确认 → 出结果**：回显确认后引擎运行，拿到 xlsx + 报告；聊天里的推荐都带**职位代码**，可回官方原表直接回查。
+**第一步**：把下面这段提示词整段复制，发给你常用的 Agent 工具（Claude Code / Codex / ZCode 等），它会替你完成安装：
+
+```text
+请帮我安装 civil-exam 选岗 skill：
+1. 克隆仓库 https://github.com/icy-bean/civil-exam
+2. 把仓库里的 skill/ 目录拷贝为 ~/.agents/skills/civil-exam/（Windows 即 C:\Users\<我>\.agents\skills\civil-exam\）
+3. 编辑安装目录里的 data_source.json：如果克隆仓库还在本地，把 local_path 指向它（离线可用）；
+   否则保持留空（首次运行会自动从 GitHub 同步约 50MB 数据，需要能访问 GitHub）
+4. 完成后告诉我怎么触发使用
+```
+
+**第二步**：新开一个会话，输入 `/civil-exam` 或直接说「帮我看看国考有什么岗位适合我」，然后按提示填写画像模板（填好发回即可）；回显确认后引擎运行，拿到 xlsx + 报告，聊天里的推荐都带**职位代码**，可回官方原表直接回查。
+
+> 不想用提示词？手动安装就两句话：克隆本仓库，把 `skill/` 拷贝为 `~/.agents/skills/civil-exam/`，`data_source.json` 的 `local_path` 指向克隆目录或留空。
 
 完整演示流程（含冷启动、负向测试）见 [docs/rehearsal-guide.md](docs/rehearsal-guide.md)。
 
