@@ -182,10 +182,10 @@ def user_major_profile(profile: dict, bachelor: pd.DataFrame, tax: pd.DataFrame)
 
 
 def cell_tokens(major_raw: str):
-    """把专业要求单元格拆成词元：剥离'本科为/研究生为'前缀、学科代码、括注与'或'连接词。"""
+    """把专业要求单元格拆成词元：剥离'本科为/本科：/研究生：'等前缀、学科代码、括注与'或'连接词。"""
     if not isinstance(major_raw, str):
         return []
-    text = re.sub(r"(?:本科|研究生|硕士|博士|大专)(?:研究生)?(?:所学专业)?为", "、", major_raw)
+    text = re.sub(r"(?:本科|研究生|硕士|博士|大专)(?:研究生)?(?:所学专业)?[为：:]", "、", major_raw)
     text = text.replace("或", "、")
     toks = []
     for p in re.split(r"[、，,;；/\n]+", text):
@@ -198,6 +198,9 @@ def cell_tokens(major_raw: str):
 
 def unlimited_major(major_raw) -> bool:
     s = str(major_raw)
+    # 分层次限定（如"本科专业不限，研究生：计算机科学与技术…"）不视为整体不限，走正常匹配
+    if "研究生：" in s or "研究生:" in s:
+        return False
     return ("不限" in s and "专业" in s) or s.strip() == "不限"
 
 

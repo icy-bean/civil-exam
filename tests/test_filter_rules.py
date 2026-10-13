@@ -31,6 +31,21 @@ def test_cell_tokens_unlimited():
     assert gr.cell_tokens("不限") == ["不限"]
     assert gr.cell_tokens(None) == []
 
+def test_cell_tokens_colon_prefix_2027():
+    # 2027 表前缀改为冒号式："本科：…；研究生：…"
+    toks = gr.cell_tokens("本科：财政学、金融学、会计学；研究生：财政学、会计")
+    assert toks == ["财政学", "金融学", "会计学", "财政学", "会计"]
+    toks = gr.cell_tokens("研究生：计算机科学与技术（0812）、软件工程（0835）")
+    assert "计算机科学与技术" in toks and "软件工程" in toks and "0812" not in " ".join(toks)
+
+def test_unlimited_major_2027_forms():
+    assert gr.unlimited_major("不限") is True
+    assert gr.unlimited_major("专业不限") is True
+    assert gr.unlimited_major("不限专业") is True
+    # 分层次限定：本科不限但研究生有目录 → 不整体放行，走正常匹配
+    mixed = "本科专业不限，研究生：计算机科学与技术（0812）、软件工程（0835）"
+    assert gr.unlimited_major(mixed) is False
+
 def test_cell_tokens_never_splits_real_major_names():
     # 目录里的真实专业名含"与/及"，必须保持完整（分词只断在 或/为/前缀/代码 处）
     for name in ["船舶与海洋工程", "语言学及应用语言学", "材料科学与工程"]:

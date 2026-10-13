@@ -51,7 +51,7 @@ EN_DEGREE = {"大专": 1, "本科": 2, "硕士研究生": 3, "博士研究生": 
 
 
 def parse_major(cell: str) -> str:
-    """抽取 (代码,名称) 对 -> '0809电子科学与技术;0812计算机科学与技术'"""
+    """抽取 (代码,名称) 对 -> '0809电子科学与技术;0812计算机科学与技术'；名称后括号内附码（'计算机技术（085404）'）输出裸码。"""
     if not isinstance(cell, str):
         return ""
     out, seen = [], set()
@@ -64,6 +64,10 @@ def parse_major(cell: str) -> str:
         if key not in seen:
             seen.add(key)
             out.append(code + name)
+    for code in re.findall(r"[（(](\d{4,6}[A-Za-z]?)[）)]", cell):
+        if code not in seen:
+            seen.add(code)
+            out.append(code)
     return ";".join(out)
 
 

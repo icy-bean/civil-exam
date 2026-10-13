@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-10-06",
-  "latest_position_year": 2026,
+  "updated_at": "2026-10-13",
+  "latest_position_year": 2027,
   "items": [
     {
       "path": "clean/catalog/major_bachelor.csv",
@@ -31,6 +31,12 @@
       "bytes": 17494070,
       "sha256": "2186edb16faeca9aa7ab237c270c60e0c8092e25b20726f88ece7735481301b6",
       "rows": 20714
+    },
+    {
+      "path": "clean/national/2027_position.csv",
+      "bytes": 16540630,
+      "sha256": "2777e58a84265f8354e1c34aa40f201b8ebb450017b9842ffb3cbc152557d492",
+      "rows": 19426
     },
     {
       "path": "clean/national/field_map.json",
@@ -90,6 +96,24 @@
       "path": "raw/national/2026/source.txt",
       "bytes": 495,
       "sha256": "71c26f6af4a7a90340ad542b7af15bc33a427db9d857c548e879247b6eb52a1e",
+      "rows": null
+    },
+    {
+      "path": "raw/national/2027/position_all.xlsx",
+      "bytes": 3292053,
+      "sha256": "8629eef3374946a56d896eedc74581337b640b1326d7433e1e65a0ff6e337808",
+      "rows": null
+    },
+    {
+      "path": "raw/national/2027/position_all_official.xls",
+      "bytes": 9657856,
+      "sha256": "a8ae6a70dcde3a099a1d66edbd81ce9edffc670ddf3c96d4ad7166007e37481a",
+      "rows": null
+    },
+    {
+      "path": "raw/national/2027/source.txt",
+      "bytes": 859,
+      "sha256": "549941c27972e4d831ea573e505f1fc23c64de2e9eee64794a3a5c46434cb883",
       "rows": null
     },
     {

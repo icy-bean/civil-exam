@@ -50,6 +50,11 @@ def test_parse_major_k_suffix_and_dedup():
     out = cp.parse_major("120203K会计学、120204财务管理、120203K会计学")
     assert "120203K会计学" in out and out.count("120203K会计学") == 1
 
+def test_parse_major_paren_codes_2027():
+    # 2027 新写法：名称后括号内附码
+    out = cp.parse_major("计算机技术（085404）、人工智能（085410）")
+    assert "085404" in out and "085410" in out
+
 
 # ---- 备注性别限定（2026 表出现"，男性，"逗号规格式） ----
 def test_gender_flag_comma_style():
