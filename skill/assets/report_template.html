@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>国考选岗报告</title>
+<style>
+:root{
+  --bg:#f6f7f9; --card:#fff; --line:#e5e7eb; --line2:#eef0f3;
+  --text:#1f2328; --muted:#6b7280; --brand:#2563eb; --brand-soft:#eff4ff;
+  --warn:#b45309; --warn-soft:#fef3c7; --danger:#b91c1c; --danger-soft:#fee2e2;
+  --ok:#15803d; --ok-soft:#dcfce7; --gray-soft:#f1f3f5; --radius:10px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font:14px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",Roboto,Helvetica,Arial,sans-serif;}
+.wrap{max-width:1280px;margin:0 auto;padding:24px 20px 60px}
+h1{font-size:22px;margin:0 0 4px}
+h2{font-size:15px;margin:0 0 12px}
+.sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:16px}
+.muted{color:var(--muted)} .small{font-size:12px}
+.head{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:13px}
+.kv b{color:var(--muted);font-weight:400}
+
+.funnel{display:flex;gap:10px;flex-wrap:wrap}
+.fstep{flex:1;min-width:170px;border:1px solid var(--line);border-radius:8px;padding:12px 14px;cursor:pointer;background:var(--card)}
+.fstep:hover{border-color:var(--brand)}
+.fstep .n{font-size:20px;font-weight:600}
+.fstep .t{font-size:12px;color:var(--muted)}
+.fstep .trail{height:6px;margin-top:8px;background:var(--brand);border-radius:4px;opacity:.85}
+.fstep.dim .trail{background:var(--warn)}
+.fstep.gray .trail{background:#cbd5e1}
+
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:14px;flex-wrap:wrap}
+.tab{border:0;background:none;padding:8px 12px;font-size:14px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent}
+.tab.on{color:var(--brand);border-bottom-color:var(--brand);font-weight:600}
+
+.filters{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:12px;color:var(--muted)}
+input[type=text],input[type=number],select{border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:13px;background:#fff;color:var(--text)}
+input[type=text]{min-width:220px} input[type=number]{width:74px}
+.chk{display:flex;flex-wrap:wrap;gap:6px}
+.chk label{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:999px;
+  padding:4px 10px;font-size:12px;cursor:pointer;background:#fff;user-select:none}
+.chk label.on{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
+.chk input{display:none}
+.btn{border:1px solid var(--line);background:#fff;border-radius:6px;padding:6px 12px;font-size:13px;cursor:pointer}
+.btn:hover{border-color:var(--brand);color:var(--brand)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{opacity:.9;color:#fff}
+.btn:disabled{opacity:.45;cursor:default}
+
+.prefs{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}
+.pgroup{display:flex;align-items:center;gap:6px}
+.pgroup b{font-weight:400;color:var(--muted);font-size:12px}
+.seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:4px 11px;font-size:12px;cursor:pointer;color:var(--muted)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--brand);color:#fff}
+
+.tw{overflow:auto;max-height:620px;border:1px solid var(--line);border-radius:8px;background:#fff}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line2);text-align:left;white-space:nowrap}
+th{position:sticky;top:0;background:#fbfcfd;font-weight:600;font-size:12px;color:var(--muted);cursor:pointer;z-index:2}
+th.nos{cursor:default}
+td.wrap{white-space:normal;min-width:260px;max-width:360px}
+tbody tr:hover{background:#fafbfc}
+tbody tr.top3{background:#fffdf3}
+.rank{display:inline-block;min-width:22px;height:22px;line-height:22px;text-align:center;border-radius:6px;background:var(--gray-soft);font-size:12px}
+tr.top3 .rank{background:#fde68a;color:#92400e}
+.tag{display:inline-block;border-radius:5px;padding:1px 6px;font-size:11px;margin-right:4px;line-height:18px}
+.tag.d{background:var(--danger-soft);color:var(--danger)}
+.tag.w{background:var(--warn-soft);color:var(--warn)}
+.tag.o{background:var(--ok-soft);color:var(--ok)}
+.tag.n{background:var(--gray-soft);color:var(--muted)}
+.tag.b{background:var(--brand-soft);color:var(--brand)}
+.pager{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:10px;font-size:13px}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+
+.tophead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.topgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.tcard{border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:#fff;cursor:pointer}
+.tcard:hover{border-color:var(--brand);box-shadow:0 2px 10px rgba(37,99,235,.10)}
+.tcard .hd{display:flex;align-items:baseline;gap:8px}
+.tcard .score{font-size:20px;font-weight:700;color:var(--brand)}
+.tcard .ttl{font-weight:600;margin:4px 0 2px}
+.tcard .meta{font-size:12px;color:var(--muted)}
+.tcard .why{margin-top:8px;font-size:12px;color:#374151}
+.tcard .tags{margin-top:6px}
+tr.flash td{background:#fff7d6}
+
+.bars{display:flex;flex-direction:column;gap:8px}
+.brow{display:grid;grid-template-columns:230px 1fr 110px;gap:10px;align-items:center;font-size:13px}
+.btrack{height:16px;background:var(--gray-soft);border-radius:4px;overflow:hidden}
+.btrack i{display:block;height:100%;background:#93b4f7}
+.brow .v{text-align:right;color:var(--muted);font-size:12px}
+.note{border-left:3px solid var(--warn);background:var(--warn-soft);padding:10px 12px;border-radius:6px;font-size:13px;margin-bottom:14px}
+.note.blue{border-left-color:var(--brand);background:var(--brand-soft)}
+.foot{color:var(--muted);font-size:12px;line-height:1.9}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1 id="title">国考选岗报告</h1>
+  <div class="sub" id="subtitle"></div>
+
+  <div class="card head">
+    <div>
+      <h2>画像</h2>
+      <div class="kv" id="profile"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>漏斗</h2>
+    <div class="funnel" id="funnel"></div>
+    <div class="small muted" style="margin-top:10px">点击卡片跳转到对应清单；需人工确认的岗位仍可报，但报名前必须核对备注原文。</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" data-tab="pos">可报岗位</button>
+    <button class="tab" data-tab="major">专业待确认 <span class="small muted" id="majorN"></span></button>
+    <button class="tab" data-tab="hist">历史部门画像</button>
+    <button class="tab" data-tab="exc">落选原因分布</button>
+    <button class="tab" data-tab="score">历年进面分数</button>
+  </div>
+
+  <div class="card" id="filterCard">
+    <div class="filters">
+      <div class="fg"><label>关键词（部门/职位/专业/职位代码）</label>
+        <input type="text" id="q" placeholder="如：税务、杭州、0812、计算机"></div>
+      <div class="fg"><label>省份</label><select id="prov"></select></div>
+      <div class="fg"><label>机构层级</label><select id="level"></select></div>
+      <div class="fg"><label>机构类别</label><select id="cls"></select></div>
+      <div class="fg"><label>系统</label><select id="sys"></select></div>
+      <div class="fg"><label>招考人数 ≥</label><input type="number" id="minhc" value="1" min="1"></div>
+      <div class="fg"><label>排序</label>
+        <select id="sort">
+          <option value="rank">排名（默认）</option>
+          <option value="total">总分</option>
+          <option value="headcount">招考人数</option>
+          <option value="treatment">待遇分</option>
+          <option value="near">离家近</option>
+        </select></div>
+      <div class="fg"><div style="display:flex;gap:8px">
+        <button class="btn" id="reset">重置</button>
+        <button class="btn primary" id="export">导出当前结果 CSV</button>
+      </div></div>
+    </div>
+    <div class="prefs" id="prefs" style="margin-top:12px">
+      <span class="small muted">偏好档位（默认全「中」= 引擎交付的排序）</span>
+    </div>
+    <div class="chk" id="flags" style="margin-top:12px">
+      <label><input type="checkbox" value="male_only">仅限男性</label>
+      <label><input type="checkbox" value="female_only">仅限女性</label>
+      <label><input type="checkbox" value="fresh_only">限应届</label>
+      <label><input type="checkbox" value="english4">四级要求</label>
+      <label><input type="checkbox" value="english6">六级要求</label>
+      <label><input type="checkbox" value="base_project">限服务基层项目</label>
+      <label><input type="checkbox" value="household">涉户籍/生源</label>
+      <label><input type="checkbox" value="min_service">有最低服务年限</label>
+      <label><input type="checkbox" value="review">只看需人工确认</label>
+    </div>
+    <div class="small muted" style="margin-top:10px">档位只改变<b>排序与推荐 TOP</b>，不改变可报范围；高/低 = 该意向权重 ×2 / ×0.5。标记勾选为「或」关系，留空不过滤。</div>
+  </div>
+
+  <div id="tab-pos">
+    <div class="card">
+      <div class="tophead">
+        <h2 style="margin:0">筛选结果推荐 TOP <span id="topN">10</span></h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="small muted">数量</span>
+          <select id="topCount"><option>5</option><option selected>10</option><option>20</option></select>
+          <span class="small muted" id="topNote"></span>
+        </div>
+      </div>
+      <div class="topgrid" id="topGrid"></div>
+      <div class="small muted" style="margin-top:10px">点卡片可跳到下方表格对应行；TOP 随筛选与偏好档位实时更新。</div>
+    </div>
+    <div class="card" style="padding:12px 14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div class="small muted" id="cnt"></div>
+        <div class="small muted">表格可横向滚动；点表头切换排序；黄色底为 Top 3</div>
+      </div>
+      <div class="tw">
+        <table id="tbl">
+          <thead><tr>
+            <th class="nos">排名</th><th data-k="total">总分</th><th class="nos">部门名称</th>
+            <th class="nos">用人司局</th><th class="nos">职位名称</th><th class="nos">职位代码</th>
+            <th class="nos">工作地点</th><th class="nos">机构层级</th><th data-k="headcount">招考人数</th>
+            <th class="nos">学历要求</th><th class="nos">政治面貌</th>
+            <th data-k="treatment">待遇</th><th data-k="near">离家近</th>
+            <th class="nos">专业要求</th><th class="nos">备注</th><th class="nos">推荐理由 / 报名提醒</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <button class="btn" id="prev">上一页</button>
+        <span id="pinfo" class="small muted"></span>
+        <button class="btn" id="next">下一页</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-major" class="hide">
+    <div class="card">
+      <div class="note" id="majorNote"></div>
+      <div class="tw" style="max-height:460px">
+        <table><thead><tr>
+          <th class="nos">部门名称</th><th class="nos">用人司局</th><th class="nos">职位名称</th>
+          <th class="nos">职位代码</th><th class="nos">工作地点</th><th class="nos">招考人数</th>
+          <th class="nos">岗位专业要求</th>
+        </tr></thead><tbody id="majorBody"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-hist" class="hide">
+    <div class="card">
+      <h2>目标部门历年招录画像（仅供参考，不参与排序）</h2>
+      <div class="tw" style="max-height:460px">
+        <table><thead><tr>
+          <th class="nos">部门/司局</th><th class="nos">历年招录</th><th class="nos">连续年数</th><th class="nos">解读</th>
+        </tr></thead><tbody id="histBody"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-exc" class="hide">
+    <div class="card">
+      <h2>落选原因分布（判断画像是否过严）</h2>
+      <div class="bars" id="bars"></div>
+      <div class="small muted" style="margin-top:12px">占比最高的一项就是你最该复核的画像字段；若「专业不符」占绝对多数，可换用毕业证规范专业名重跑。</div>
+    </div>
+  </div>
+
+  <div id="tab-score" class="hide">
+    <div class="card">
+      <h2>历年进面分数</h2>
+      <div class="note" id="scoreNote"></div>
+      <div class="tw" style="max-height:460px">
+        <table><thead><tr id="scoreHead"></tr></thead><tbody id="scoreBody"></tbody></table>
+      </div>
+      <div class="small muted" style="margin-top:12px">口径：该部门该司局<b>最低进面分数</b>（非平均分）；同一部门不同职位分数差异大，仅作粗略参考。缺口年份显示「—」。</div>
+    </div>
+  </div>
+
+  <div class="card foot">
+    <div><b>口径与边界（务必读）</b></div>
+    <div>· 待遇分是<b>粗评估</b>：地区经济档 × 0.6 ＋ 系统津贴档 × 0.4，非实际收入，仅供意向排序。</div>
+    <div>· 职位表<b>不含进面分数与报录比</b>，本报告不评估录取难度。</div>
+    <div>· 专业为<b>宽匹配</b>（目录类别＋名称），边缘专业以招录机关解释为准；「需人工确认」岗位务必核对备注原文。</div>
+    <div>· 表格中的<b>职位代码</b>可在官方原表直接搜索回查。</div>
+    <div>· 报名前以官方公告、招考简章与职位表原文为最终依据。本文件含个人画像信息，请勿外发。</div>
+    <div id="stamp" style="margin-top:6px"></div>
+  </div>
+</div>
+
+<script>
+const DATA = __PAYLOAD__;
+const ROWS = DATA.rows || [];
+const WKEY = [["near_home","离家近"],["treatment","待遇"],["unit","单位"],["system","系统"],["region","地域"],["level","层级"]];
+const W0 = {}; WKEY.forEach(function(kv){ W0[kv[0]] = (DATA.weights && DATA.weights[kv[0]]) || 0; });
+const PREFS = WKEY.filter(function(kv){ return W0[kv[0]] > 0; });
+const PF = {}; PREFS.forEach(function(kv){ PF[kv[0]] = 1; });
+const FLAG_TEXT = {male_only:["限男性","d"],female_only:["限女性","d"],fresh_only:["限应届","w"],
+  english4:["四级425+","w"],english6:["六级425+","w"],base_project:["服务基层项目","w"],
+  household:["涉户籍","d"],min_service:["最低服务年限","b"],review:["需人工确认","d"]};
+
+const $ = function(s){ return document.querySelector(s); };
+const esc = function(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); };
+const SYS_RULES = [["税务","税务"],["海关","海关"],["统计","统计"],["铁路","铁路"],["消防","消防"],
+  ["公安","公安"],["海事","海事"],["金融监管","金融监管"],["银保监","金融监管"],
+  ["法院","法院"],["检察院","检察院"]];
+function sysOf(r){
+  var t = (r.dept||"") + (r.org||"");
+  for (var i=0;i<SYS_RULES.length;i++){ if (t.indexOf(SYS_RULES[i][0]) >= 0) return SYS_RULES[i][1]; }
+  return "其他";
+}
+ROWS.forEach(function(r){ r.sys = sysOf(r); });
+
+/* ---------- 头部 ---------- */
+document.title = DATA.year + " 年度国考选岗报告";
+$("#title").textContent = DATA.year + " 年度国考选岗报告";
+$("#subtitle").textContent = "数据：" + DATA.year + " 年度职位表（" + DATA.total + " 岗，manifest 更新 " +
+  (DATA.updated||"—") + "）· 生成 " + (DATA.stamp||"") + " · 完整清单可筛选，含个人画像信息请勿外发";
+$("#profile").innerHTML = (DATA.profile_lines||[]).map(function(p){
+  return "<b>" + esc(p[0]) + "</b><span>" + esc(p[1]) + "</span>"; }).join("");
+$("#stamp").textContent = "报告生成：" + (DATA.stamp||"");
+
+/* ---------- 漏斗 ---------- */
+(function(){
+  var f = DATA.funnel || {};
+  var mx = Math.max(f.total||1, 1);
+  var steps = [
+    ["原始岗位", f.total, "", 100],
+    ["硬性条件过滤后可报", f.eligible, "", (f.eligible||0)/(mx)*100],
+    ["其中需人工确认", f.needs_review, "dim", (f.needs_review||0)/mx*100],
+    ["落选", f.excluded, "gray", (f.excluded||0)/mx*100]
+  ];
+  $("#funnel").innerHTML = steps.map(function(s){
+    return '<div class="fstep ' + s[2] + '" data-jump="' + (s[2]==="gray"?"exc":"pos") + '">' +
+      '<div class="t">' + s[0] + '</div><div class="n">' + (s[1]==null?"—":s[1].toLocaleString()) + '</div>' +
+      '<div class="trail" style="width:' + Math.max(s[3],1.5).toFixed(1) + '%"></div></div>';
+  }).join("");
+  $("#funnel").querySelectorAll(".fstep").forEach(function(el){
+    el.onclick = function(){ document.querySelector('.tab[data-tab="' + el.dataset.jump + '"]').click(); };
+  });
+})();
+
+/* ---------- 静态区块 ---------- */
+$("#majorN").textContent = (DATA.major_rows||[]).length ? "(" + DATA.major_rows.length + ")" : "";
+var mTotal = DATA.major_total || 0, mRows = (DATA.major_rows || []);
+var mShown = mTotal > mRows.length ? "（HTML 仅列前 " + mRows.length + " 条，全量见 xlsx「专业待确认」）" : "";
+$("#majorNote").innerHTML = mRows.length
+  ? "你的专业「" + esc((DATA.major_unresolved || []).join("、")) + "」未能在目录中解析出类别/门类，宽匹配失效，以下 <b>" +
+    mTotal + "</b> 个岗位因此被排除" + mShown + "——<b>不是确定性不符</b>，请核对专业要求原文后自行决定是否报考。"
+  : "本次没有因专业未解析而被排除的岗位。";
+$("#majorBody").innerHTML = (DATA.major_rows||[]).map(function(r){
+  return "<tr><td>" + esc(r.dept) + "</td><td>" + esc(r.org) + "</td><td>" + esc(r.position) +
+    "</td><td>" + esc(r.code) + "</td><td>" + esc(r.loc) + "</td><td>" + esc(r.headcount) +
+    '</td><td class="wrap">' + esc(r.major) + "</td></tr>"; }).join("");
+$("#histBody").innerHTML = (DATA.hist||[]).map(function(h){
+  return "<tr><td>" + esc(h.k) + '</td><td class="wrap">' + esc(h.t) + "</td><td>" + esc(h.n) +
+    "</td><td>" + esc(h.n >= 2 ? "连续招录，编制缺口稳定" : "近年新开/有中断") + "</td></tr>"; }).join("");
+(function(){
+  var e = DATA.excluded_reasons || [], mx = Math.max.apply(null, e.map(function(x){return x[1];}).concat([1]));
+  $("#bars").innerHTML = e.length ? e.map(function(x){
+    var pct = (DATA.funnel && DATA.funnel.excluded) ? (x[1]/DATA.funnel.excluded*100).toFixed(1) : "—";
+    return '<div class="brow"><div>' + esc(x[0]) + '</div><div class="btrack"><i style="width:' +
+      (x[1]/mx*100).toFixed(1) + '%"></i></div><div class="v">' + x[1].toLocaleString() + " (" + pct + "%)</div></div>";
+  }).join("") : '<div class="empty">无落选数据</div>';
+})();
+(function(){
+  var sc = DATA.score_rows || [], years = DATA.score_years || [];
+  $("#scoreHead").innerHTML = "<th class=\"nos\">部门/司局</th>" +
+    years.map(function(y){ return '<th class="nos">' + esc(y) + "</th>"; }).join("") +
+    '<th class="nos">趋势</th>';
+  if (!sc.length) {
+    $("#scoreNote").innerHTML = "本年度进面分数<b>尚未收录</b>：官方面试名单每年 1-3 月发布，" +
+      "本表在收录前留空，<b>不用空数据推算录取难度</b>。";
+    $("#scoreBody").innerHTML = '<tr><td colspan="' + (years.length+2) +
+      '" class="empty">暂无数据；数据接入后本表自动填充最低进面分数</td></tr>';
+    return;
+  }
+  $("#scoreNote").innerHTML = "下列为该部门/司局<b>最低进面分数</b>，缺口年份显示「—」。";
+  $("#scoreBody").innerHTML = sc.map(function(s){
+    var known = s.v.filter(function(x){ return x != null; });
+    var trend = known.length >= 2 ? (known[known.length-1] - known[0] >= 0 ? "↑ 走高" : "↓ 走低") : "—";
+    return "<tr><td>" + esc(s.k) + "</td>" + s.v.map(function(x){
+      return "<td>" + (x == null ? '<span class="muted">—</span>' : x.toFixed(1)) + "</td>"; }).join("") +
+      "<td>" + trend + "</td></tr>";
+  }).join("");
+})();
+
+/* ---------- 选择与筛选 ---------- */
+function fill(el, vals, label){
+  el.innerHTML = '<option value="">' + label + "</option>" +
+    vals.map(function(v){ return '<option value="' + esc(v) + '">' + esc(v) + "</option>"; }).join("");
+}
+function uniq(f){ var m = {}, a = []; ROWS.forEach(function(r){ var v = f(r); if (v && !m[v]) { m[v] = 1; a.push(v); } }); return a.sort(); }
+fill($("#prov"), uniq(function(r){ return r.prov; }), "全部省份");
+fill($("#level"), uniq(function(r){ return r.level; }), "全部层级");
+fill($("#cls"), uniq(function(r){ return r.cls; }), "全部类别");
+fill($("#sys"), uniq(function(r){ return r.sys; }), "全部系统");
+
+const state = {q:"",prov:"",level:"",cls:"",sys:"",minhc:1,sort:"rank",dir:1,flags:new Set(),page:1,size:20};
+function effW(){ var w = {}; WKEY.forEach(function(kv){ w[kv[0]] = W0[kv[0]] * (PF[kv[0]] || 1); }); return w; }
+function totalOf(r, w){
+  var num = 0, den = 0;
+  WKEY.forEach(function(kv){
+    var k = kv[0], wk = w[k]; if (!wk) return;
+    var v = (r.s && r.s[k]) || 0; num += wk * v; den += wk;
+  });
+  return den ? +(num/den).toFixed(2) : 0;
+}
+function resort(){
+  var w = effW();
+  ROWS.forEach(function(r){ r.total = totalOf(r, w); });
+  ROWS.sort(function(a, b){ return (b.total - a.total) || ((b.headcount||0) - (a.headcount||0)); });
+  ROWS.forEach(function(r, i){ r.rank = i + 1; });
+}
+function filtered(){
+  var q = state.q.trim().toLowerCase();
+  return ROWS.filter(function(r){
+    if (q && ((r.dept||"") + (r.org||"") + (r.position||"") + (r.code||"") + (r.major||"")).toLowerCase().indexOf(q) < 0) return false;
+    if (state.prov && r.prov !== state.prov) return false;
+    if (state.level && r.level !== state.level) return false;
+    if (state.cls && r.cls !== state.cls) return false;
+    if (state.sys && r.sys !== state.sys) return false;
+    if (+r.headcount < +state.minhc) return false;
+    if (state.flags.size) {
+      var hit = false;
+      state.flags.forEach(function(f){ if (r.flags.indexOf(f) >= 0) hit = true; });
+      if (!hit) return false;
+    }
+    return true;
+  }).sort(function(a, b){
+    var key = state.sort;
+    var va = key === "rank" ? a.rank : (key === "total" ? a.total :
+      (key === "headcount" ? (a.headcount||0) : (key === "treatment" ? ((a.s&&a.s.treatment)||0) : ((a.s&&a.s.near_home)||0))));
+    var vb = key === "rank" ? b.rank : (key === "total" ? b.total :
+      (key === "headcount" ? (b.headcount||0) : (key === "treatment" ? ((b.s&&b.s.treatment)||0) : ((b.s&&b.s.near_home)||0))));
+    return (va - vb) * state.dir * (key === "rank" ? 1 : -1);
+  });
+}
+function tagHtml(flags){
+  return flags.map(function(f){
+    var t = FLAG_TEXT[f];
+    return t ? '<span class="tag ' + t[1] + '">' + t[0] + "</span>" : "";
+  }).join("");
+}
+function whyOf(r){
+  var w = effW();
+  return WKEY.filter(function(kv){ return w[kv[0]] > 0; }).map(function(kv){
+    var v = (r.s && r.s[kv[0]]) || 0;
+    return kv[1] + " " + v + (v >= 10 ? "（命中）" : "");
+  }).join("；");
+}
+function render(){
+  var rows = filtered();
+  var pages = Math.max(1, Math.ceil(rows.length / state.size));
+  if (state.page > pages) state.page = pages;
+  var start = (state.page - 1) * state.size, page = rows.slice(start, start + state.size);
+  $("#cnt").textContent = "筛选出 " + rows.length + " 个岗位（共 " + ROWS.length + " 个可报）";
+  $("#pinfo").textContent = "第 " + state.page + " / " + pages + " 页";
+  $("tbody").innerHTML = page.length ? page.map(function(r){
+    return '<tr class="' + (r.rank <= 3 ? "top3" : "") + '">' +
+      '<td><span class="rank">' + r.rank + "</span></td>" +
+      "<td><b>" + r.total + "</b></td>" +
+      "<td>" + esc(r.dept) + "</td><td>" + esc(r.org) + "</td>" +
+      "<td>" + esc(r.position) + "</td><td>" + esc(r.code) + "</td>" +
+      "<td>" + esc(r.loc) + "</td><td>" + esc(r.level) + "</td>" +
+      "<td>" + esc(r.headcount) + "</td><td>" + esc(r.edu) + "</td><td>" + esc(r.poli) + "</td>" +
+      "<td>" + (((r.s && r.s.treatment) != null) ? r.s.treatment : "—") + "</td>" +
+      "<td>" + (((r.s && r.s.near_home) != null) ? r.s.near_home : "—") + "</td>" +
+      '<td class="wrap">' + esc(r.major) + "</td>" +
+      '<td class="wrap">' + esc(r.remarks) + "</td>" +
+      '<td class="wrap">' + esc(r.reasons) + (r.notes ? "<br>" + esc(r.notes) : "") +
+        "<br>" + tagHtml(r.flags) + "</td></tr>";
+  }).join("") : '<tr><td colspan="16" class="empty">没有符合条件的岗位，试试放宽筛选</td></tr>';
+  $("#prev").disabled = state.page <= 1;
+  $("#next").disabled = state.page >= pages;
+  renderTop(rows);
+}
+function renderTop(rows){
+  var n = +$("#topCount").value;
+  $("#topN").textContent = n;
+  var top = rows.slice(0, n);
+  $("#topGrid").innerHTML = top.length ? top.map(function(r){
+    return '<div class="tcard" data-code="' + esc(r.code) + '">' +
+      '<div class="hd"><span class="rank">' + r.rank + '</span><span class="score">' + r.total + "</span>" +
+      '<span class="small muted">' + esc(r.loc) + " · " + esc(r.level) + " · 招" + esc(r.headcount) + "人</span></div>" +
+      '<div class="ttl">' + esc(r.position) + "</div>" +
+      '<div class="meta">' + esc(r.dept) + " · " + esc(r.org) + "</div>" +
+      '<div class="meta">职位代码 ' + esc(r.code) + "</div>" +
+      '<div class="why">依据：' + esc(whyOf(r)) + "</div>" +
+      '<div class="tags">' + tagHtml(r.flags) + "</div></div>";
+  }).join("") : '<div class="empty">当前筛选没有岗位，放宽条件后再看</div>';
+  $("#topGrid").querySelectorAll(".tcard").forEach(function(c){
+    c.onclick = function(){ locate(c.dataset.code); };
+  });
+}
+function locate(code){
+  var rows = filtered(), i = -1;
+  rows.forEach(function(r, idx){ if (r.code === code) i = idx; });
+  if (i < 0) return;
+  state.page = Math.floor(i / state.size) + 1; render();
+  var tr = null;
+  document.querySelectorAll("#tbl tbody tr").forEach(function(t){ if (t.textContent.indexOf(code) >= 0 && !tr) tr = t; });
+  if (tr) { tr.classList.add("flash"); tr.scrollIntoView({block:"center"}); setTimeout(function(){ tr.classList.remove("flash"); }, 1500); }
+}
+function applyPrefs(){
+  resort();
+  var changed = PREFS.some(function(kv){ return PF[kv[0]] !== 1; });
+  $("#topNote").textContent = changed ? "已按偏好档位重排（非引擎原始排序）" : "与引擎交付一致";
+  if (state.sort === "rank") { state.sort = "total"; $("#sort").value = "total"; }
+  state.page = 1; render();
+}
+
+$("#prefs").insertAdjacentHTML("beforeend", PREFS.length ? PREFS.map(function(kv){
+  return '<div class="pgroup"><b>' + kv[1] + '</b><div class="seg" data-k="' + kv[0] + '">' +
+    [["低",0.5],["中",1],["高",2]].map(function(o){
+      return '<button data-v="' + o[1] + '"' + (o[1] === 1 ? ' class="on"' : "") + ">" + o[0] + "</button>";
+    }).join("") + "</div></div>";
+}).join("") : '<span class="small muted">本次未设置意向权重</span>');
+$("#prefs").onclick = function(e){
+  var b = e.target.closest("button"); if (!b) return;
+  var seg = b.closest(".seg");
+  PF[seg.dataset.k] = +b.dataset.v;
+  seg.querySelectorAll("button").forEach(function(x){ x.classList.toggle("on", x === b); });
+  applyPrefs();
+};
+$("#q").oninput = function(e){ state.q = e.target.value; state.page = 1; render(); };
+$("#prov").onchange = function(e){ state.prov = e.target.value; state.page = 1; render(); };
+$("#level").onchange = function(e){ state.level = e.target.value; state.page = 1; render(); };
+$("#cls").onchange = function(e){ state.cls = e.target.value; state.page = 1; render(); };
+$("#sys").onchange = function(e){ state.sys = e.target.value; state.page = 1; render(); };
+$("#minhc").oninput = function(e){ state.minhc = e.target.value || 1; state.page = 1; render(); };
+$("#sort").onchange = function(e){ state.sort = e.target.value; render(); };
+$("#flags").onchange = function(e){
+  var v = e.target.value;
+  if (e.target.checked) { state.flags.add(v); } else { state.flags.delete(v); }
+  e.target.closest("label").classList.toggle("on", e.target.checked);
+  state.page = 1; render();
+};
+$("#topCount").onchange = render;
+$("#reset").onclick = function(){
+  Object.assign(state, {q:"",prov:"",level:"",cls:"",sys:"",minhc:1,sort:"rank",dir:1,flags:new Set(),page:1});
+  $("#q").value = ""; $("#prov").value = ""; $("#level").value = ""; $("#cls").value = "";
+  $("#sys").value = ""; $("#minhc").value = 1; $("#sort").value = "rank";
+  document.querySelectorAll("#flags input").forEach(function(i){ i.checked = false; i.closest("label").classList.remove("on"); });
+  PREFS.forEach(function(kv){ PF[kv[0]] = 1; });
+  document.querySelectorAll("#prefs .seg").forEach(function(seg){
+    seg.querySelectorAll("button").forEach(function(b){ b.classList.toggle("on", +b.dataset.v === 1); });
+  });
+  applyPrefs();
+};
+$("#prev").onclick = function(){ if (state.page > 1) { state.page--; render(); } };
+$("#next").onclick = function(){ state.page++; render(); };
+document.querySelectorAll("#tbl th[data-k]").forEach(function(th){
+  th.onclick = function(){
+    var k = th.dataset.k;
+    if (state.sort === k) { state.dir *= -1; } else { state.sort = k; state.dir = 1; }
+    $("#sort").value = k; render();
+  };
+});
+$("#export").onclick = function(){
+  var rows = filtered();
+  var head = ["排名","总分","部门名称","用人司局","职位名称","职位代码","工作地点","机构层级","机构类别","招考人数","学历要求","政治面貌","专业要求","备注","标记","推荐理由"];
+  var body = rows.map(function(r){
+    return [r.rank, r.total, r.dept, r.org, r.position, r.code, r.loc, r.level, r.cls, r.headcount,
+            r.edu, r.poli, r.major, r.remarks, r.flags.join("|"), r.reasons];
+  });
+  var csv = [head].concat(body).map(function(a){
+    return a.map(function(v){ return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }).join(",");
+  }).join("\r\n");
+  var blob = new Blob(["\ufeff" + csv], {type:"text/csv;charset=utf-8"});
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "civil_exam_" + DATA.year + "_筛选结果.csv";
+  a.click(); URL.revokeObjectURL(a.href);
+};
+const TABS = ["pos","major","hist","exc","score"];
+document.querySelectorAll(".tab").forEach(function(b){
+  b.onclick = function(){
+    var t = b.dataset.tab;
+    document.querySelectorAll(".tab").forEach(function(x){ x.classList.toggle("on", x === b); });
+    TABS.forEach(function(x){ $("#tab-" + x).classList.toggle("hide", x !== t); });
+    $("#filterCard").classList.toggle("hide", !(t === "pos" || t === "major"));
+  };
+});
+
+$("#topNote").textContent = "与引擎交付一致";
+render();
+</script>
+</body>
+</html>
