@@ -11,4 +11,5 @@ profile.json
 run_stats.json
 civil_exam_*.xlsx
 civil_exam_*.md
+civil_exam_*.html
 stdout.log

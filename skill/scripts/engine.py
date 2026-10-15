@@ -286,11 +286,12 @@ def hard_filter(pos: pd.DataFrame, profile: dict, mprof: tuple):
         if not reasons:
             ok, tax_ok, matched = major_match(r, names, codes, classes, gates, tax_cats, in_tax_catalog)
             if not ok:
-                exclude("major")
+                # 专业未解析导致的匹配失败不是确定性不符：单独归类，交付时单列供人工核对
+                exclude("major_unresolved" if unresolved else "major")
             if ok and not tax_ok:
                 exclude("tax_catalog")
-            if unresolved and not ok:
-                review.append((r, "major_unresolved", "、".join(unresolved)))
+            # 注意：未解析导致的落选不进 review（它们不在可报列表里，
+            # 由 build_output 单列进 xlsx「专业待确认」+ 报告小节 + stats.major_unresolved_excluded 承载）
         # 户籍：无法自动判定 -> 人工确认
         if not reasons and "household" in flags:
             review.append((r, "household_check", "备注涉户籍/生源限制，需人工核对"))
@@ -452,6 +453,21 @@ NOTES_OF = ("english4", "english6", "fresh_only", "base_project", "household", "
             "male_only", "female_only", "male_fit", "female_fit")
 
 
+def render_html(payload: dict, out_dir: Path, year: int):
+    """把交付数据内联进单文件 HTML（零外部依赖，离线可开）。
+
+    模板缺失时不阻断主流程，返回 None 由调用方在 stdout 中标记。
+    """
+    tpl = Path(__file__).resolve().parent.parent / "assets" / "report_template.html"
+    if not tpl.exists():
+        return None
+    data = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+    html = tpl.read_text(encoding="utf-8").replace("__PAYLOAD__", data)
+    p = out_dir / f"civil_exam_{year}_报告.html"
+    p.write_text(html, encoding="utf-8")
+    return p
+
+
 def build_output(rows, excluded, review, profile, year, updated, hist, out_dir: Path, top_n: int,
                  age: float = 0.0, default_age_max: int = 35, major_unresolved=None, unflagged_total: int = 0):
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -505,16 +521,28 @@ def build_output(rows, excluded, review, profile, year, updated, hist, out_dir: 
                 hist_lines.append({"部门/司局": key, "历年招录": " · ".join(per) + f" · {year}招{cur_n}人",
                                    "连续招录年数": len(per) + 1})
     df_hist = pd.DataFrame(hist_lines)
+    # 专业未解析而被排除的岗位：非确定性不符，单列供人工核对，不混进可报排序
+    unresolved_rows = [(r, c) for r, c in excluded if c == "major_unresolved"]
+    df_unres = pd.DataFrame([{
+        "部门名称": r.dept_name, "用人司局": r.org_name, "职位名称": r.position_name,
+        "职位代码": r.position_code, "工作地点": r.work_location, "招考人数": r.headcount,
+        "岗位专业要求": r.major_raw, "你的专业": "、".join(hard.get("majors", [])),
+        "未解析专业": "、".join(major_unresolved or []),
+    } for r, _ in unresolved_rows]) if unresolved_rows else pd.DataFrame()
     exc_counts = pd.Series([c for _, c in excluded]).value_counts() if excluded else pd.Series(dtype=int)
     EXC_LABEL = {"gender": "性别不符", "age": "年龄不符", "education": "学历不符", "degree": "学位不符",
                  "politics": "政治面貌不符", "grassroots": "基层年限不足", "base_project": "限服务基层项目人员",
-                 "fresh": "限应届", "english": "四六级不符", "major": "专业不符", "tax_catalog": "专业不在税务目录内",
+                 "fresh": "限应届", "english": "四六级不符", "major": "专业不符",
+                 "major_unresolved": "专业未在目录中解析（需人工确认）",
+                 "tax_catalog": "专业不在税务目录内",
                  "region": "地域排除（用户exclude设定）"}
     df_exc = pd.DataFrame({"排除原因": [EXC_LABEL.get(c, c) for c in exc_counts.index], "岗位数": exc_counts.values})
     xlsx_path = out_dir / f"civil_exam_{year}_结果.xlsx"
     with pd.ExcelWriter(xlsx_path, engine="openpyxl") as w:
         df_all.to_excel(w, sheet_name="可报岗位排序", index=False)
         df_top.to_excel(w, sheet_name="Top50详情", index=False)
+        if not df_unres.empty:
+            df_unres.to_excel(w, sheet_name="专业待确认", index=False)
         df_hist.to_excel(w, sheet_name="历史部门画像", index=False)
         df_exc.to_excel(w, sheet_name="落选统计", index=False)
         for ws in w.book.worksheets:
@@ -523,7 +551,68 @@ def build_output(rows, excluded, review, profile, year, updated, hist, out_dir: 
                 width = max(len(str(c.value)) if c.value is not None else 0 for c in col[:50])
                 ws.column_dimensions[col[0].column_letter].width = min(max(width * 1.9 + 2, 9), 60)
 
-    # ---- 报告 md
+    # ---- 可筛选 HTML 报告（主交付物：数据内联，零外部依赖）
+    review_codes = {str(r.position_code) for r, _, _ in review}
+    intents = profile.get("intents", {})
+
+    def w_of(k):
+        v = intents.get(k, 0)
+        return float(v if not isinstance(v, dict) else (v.get("weight") or 0))
+
+    def hflags(r):
+        fl = [f for f in ("male_only", "female_only", "fresh_only", "english4", "english6",
+                          "base_project", "household") if f in str(r.extra_flags or "")]
+        if msrv(r):
+            fl.append("min_service")
+        if str(r.position_code) in review_codes:
+            fl.append("review")
+        return fl
+
+    def hc(v):
+        return int(v) if pd.notna(v) else 0
+
+    payload = {
+        "year": year, "updated": updated, "stamp": stamp,
+        "funnel": {"total": len(rows) + len(excluded), "eligible": len(rows),
+                   "needs_review": len(review), "excluded": len(excluded)},
+        "profile_lines": [
+            ["性别", str(hard.get("gender", ""))],
+            ["出生/年龄", "{}（报名口径 {:.1f}，公告默认上限 {}）".format(hard.get("birth", ""), age, default_age_max)],
+            ["政治面貌", str(hard.get("politics", ""))],
+            ["学历学位", "{} / {}{}".format(hard.get("education", ""), hard.get("degree", ""),
+                                            "（应届）" if hard.get("fresh") else "")],
+            ["专业", "、".join(hard.get("majors", []))],
+            ["四六级", "四级 {} · 六级 {}".format(hard.get("cet4", 0), hard.get("cet6", 0))],
+            ["常驻地", "、".join(hard.get("base_locations", []))],
+        ],
+        "weights": {k: w_of(k) for k in ("near_home", "treatment", "unit", "system", "region", "level")},
+        "rows": [{"rank": it["rank"], "total": it["total"],
+                  "s": {k: round(float(v), 1) for k, v in it["scores"].items()},
+                  "dept": it["row"].dept_name, "org": it["row"].org_name,
+                  "position": it["row"].position_name, "code": str(it["row"].position_code),
+                  "loc": it["row"].work_location, "prov": str(it["row"].work_province or ""),
+                  "city": str(it["row"].work_city or ""), "level": it["row"].org_level,
+                  "cls": AGENCY_CN.get(it["row"].agency_class, it["row"].agency_class),
+                  "headcount": hc(it["row"].headcount), "edu": it["row"].education_raw,
+                  "poli": it["row"].politics_raw, "major": str(it["row"].major_raw),
+                  "remarks": str(it["row"].remarks or "")[:300],
+                  "reasons": "；".join(it["reasons"]),
+                  "notes": "；".join(x for x in (note_of(it["row"]), msrv(it["row"])) if x),
+                  "flags": hflags(it["row"])} for it in rows],
+        # 专业未解析清单可能上万条，HTML 只列前 500 条，全量仍在 xlsx
+        "major_total": len(unresolved_rows),
+        "major_rows": [{"dept": r.dept_name, "org": r.org_name, "position": r.position_name,
+                        "code": str(r.position_code), "loc": r.work_location, "headcount": hc(r.headcount),
+                        "major": str(r.major_raw)[:200]} for r, _ in unresolved_rows[:500]],
+        "major_unresolved": major_unresolved or [],
+        "hist": [{"k": h["部门/司局"], "t": h["历年招录"], "n": h["连续招录年数"]} for h in hist_lines],
+        "excluded_reasons": [[EXC_LABEL.get(c, c), int(n)] for c, n in exc_counts.items()],
+        # 进面分数依赖面试名单数据链（每年 1-3 月更新），未收录时留空，不用空数据推算难度
+        "score_years": [], "score_rows": [],
+    }
+    html_path = render_html(payload, out_dir, year)
+
+    # ---- 报告 md（摘要版：详细清单与筛选交互在 HTML）
     top10 = rows[:10]
     md = [f"# {year} 年度国考选岗报告", "",
           f"- 数据：{year} 年度职位表（{len(rows) + len(excluded)} 岗，manifest 更新 {updated}，粗评估口径见附注）",
@@ -532,6 +621,7 @@ def build_output(rows, excluded, review, profile, year, updated, hist, out_dir: 
           f"- 意向权重：" + "，".join(
               f"{k}={v if not isinstance(v, dict) else v.get('weight')}"
               for k, v in profile.get("intents", {}).items() if (v if not isinstance(v, dict) else v.get("weight"))),
+          f"- 可筛选完整清单：`civil_exam_{year}_报告.html`（浏览器直接打开：筛选/排序/偏好档位/导出 CSV）",
           "",
           "## 漏斗", "",
           f"- 原始岗位 **{len(rows) + len(excluded)}** 个",
@@ -540,7 +630,12 @@ def build_output(rows, excluded, review, profile, year, updated, hist, out_dir: 
           f"其中「备注含限定表述但规则未识别」{sum(1 for _, k, _ in review if k == 'unflagged_restriction')} 条"
           f"（全表共 {unflagged_total} 条，已逐条列入下方样例）",
           "",
-          "## Top 10", "",
+    ]
+    if unresolved_rows:
+        md.append(f"- 因「专业未在目录中解析」被排除 **{len(unresolved_rows)}** 个：非确定性不符，"
+                  f"已单列于 xlsx「专业待确认」，请核对专业要求原文后决定是否报考")
+        md.append("")
+    md += ["## Top 10", "",
           "| # | 总分 | 部门 | 职位 | 职位代码 | 地点 | 人数 | 核心理由 |",
           "|---|---|---|---|---|---|---|---|"]
     for it in top10:
@@ -560,10 +655,15 @@ def build_output(rows, excluded, review, profile, year, updated, hist, out_dir: 
             md.append(f"- {r.dept_name} {r.position_name}（{r.work_location}）：{text}")
         if len(unflagged_samples) > 10:
             md.append(f"- ……共 {len(unflagged_samples)} 条，全量见 xlsx「可报岗位排序」的报名提醒列")
-    if hist_lines:
-        md += ["", "## 附：目标部门历年招录画像（仅供参考，不参与排序）", ""]
-        for h in hist_lines[:15]:
-            md.append(f"- {h['部门/司局']}：{h['历年招录']} —— {'连续招录，编制缺口稳定' if h['连续招录年数'] >= 2 else '近年新开/有中断'}")
+    if unresolved_rows:
+        md += ["", "### 待人工确认：专业未在目录中解析而被排除的岗位（非确定性不符）", "",
+               f"- 你的专业「{'、'.join(major_unresolved or hard.get('majors', []))}」未能在专业目录中解析出类别/门类，"
+               f"宽匹配失效，以下 {len(unresolved_rows)} 个岗位因此被排除："]
+        for r, _ in unresolved_rows[:10]:
+            md.append(f"- {r.dept_name} {r.position_name}（{r.work_location}，职位代码 {r.position_code}）："
+                      f"专业要求「{str(r.major_raw)[:60]}」")
+        if len(unresolved_rows) > 10:
+            md.append(f"- ……共 {len(unresolved_rows)} 条，全量见 xlsx「专业待确认」")
     md += ["",
            "## 口径与边界（务必读）", "",
            "- **待遇分是粗评估**：地区经济档×0.6＋系统津贴档×0.4，非实际收入，仅供意向排序。",
@@ -588,6 +688,7 @@ def build_output(rows, excluded, review, profile, year, updated, hist, out_dir: 
             ["按报名口径年龄 {:.1f}，接近公告默认上限 {}，边缘岗位需按公告出生月份口径逐条复核".format(age, default_age_max)
              if default_age_max - age < 0.5 else None] or []),
         "major_unresolved": major_unresolved or [],
+        "major_unresolved_excluded": len(unresolved_rows),
         "excluded_reasons": {EXC_LABEL.get(c, c): int(n) for c, n in exc_counts.items()},
         "top10": [
             {"rank": it["rank"], "total": it["total"], "dept": it["row"].dept_name,
@@ -595,15 +696,35 @@ def build_output(rows, excluded, review, profile, year, updated, hist, out_dir: 
              "headcount": int(it["row"].headcount) if pd.notna(it["row"].headcount) else None,
              "position_code": it["row"].position_code}
             for it in top10],
-        "outputs": {"xlsx": str(xlsx_path), "report": str(md_path)},
+        "outputs": {"xlsx": str(xlsx_path), "report": str(md_path),
+                    "html": str(html_path) if html_path else None},
     }
     print(json.dumps(stats, ensure_ascii=False, indent=2))
+
+
+def resolve_year(arg, manifest_path: Path) -> int:
+    """--year latest（默认）取 MANIFEST 的 latest_position_year，避免文档/调用方写死年份。
+
+    用户显式指定年份时原样使用；该年未收录由 load_repo 统一硬失败（拒绝拿旧表冒充当年）。
+    """
+    s = str(arg).strip().lower()
+    if s in ("latest", "auto", ""):
+        if not manifest_path.exists():
+            fail(f"无法解析 latest 年份：{manifest_path} 不存在")
+        y = json.loads(manifest_path.read_text(encoding="utf-8")).get("latest_position_year")
+        if not y:
+            fail("MANIFEST.json 未记录 latest_position_year，请显式传 --year {年份}")
+        return int(y)
+    if not s.isdigit():
+        fail(f"--year 只接受年份数字或 latest，收到：{arg}")
+    return int(s)
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--profile", required=True)
-    ap.add_argument("--year", type=int, required=True)
+    ap.add_argument("--year", default="latest",
+                    help="报考年度；latest（默认）= MANIFEST 的 latest_position_year")
     ap.add_argument("--out", default=".")
     ap.add_argument("--top", type=int, default=30)
     ap.add_argument("--data", default=None)
@@ -620,16 +741,17 @@ def main():
         else:
             fail(f"数据仓库不存在且远端同步失败：{data_dir}（检查 data_source.json 的 local_path / remote_manifest_urls）")
 
-    pos, hist, bachelor, tax, updated = load_repo(data_dir, args.year)
+    year = resolve_year(args.year, data_dir / "MANIFEST.json")
+    pos, hist, bachelor, tax, updated = load_repo(data_dir, year)
     mprof = user_major_profile(profile, bachelor, tax)
     eligible, excluded, review, unflagged_total = hard_filter(pos, profile, mprof)
     kept, dropped = apply_region_exclude(eligible, profile)
     excluded += [(r, "region") for r in dropped]
     rows = score_positions(kept, profile)
-    age_of = make_age_of(args.year)
+    age_of = make_age_of(year)
     age = age_of(profile["hard"]["birth"])
     default_age_max = 40 if (profile["hard"].get("fresh") and EDU_LEVEL.get(profile["hard"]["education"], 0) >= 3) else 35
-    build_output(rows, excluded, review, profile, args.year, updated, hist, Path(args.out), args.top,
+    build_output(rows, excluded, review, profile, year, updated, hist, Path(args.out), args.top,
                  age, default_age_max, mprof[5], unflagged_total)
 
 

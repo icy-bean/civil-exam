@@ -11,7 +11,7 @@ description: 国考选岗助手：基于官方职位表做硬性条件过滤 + �
 
 读 skill 目录下的 `data_source.json`：
 
-- `local_path` 非空：`$DATA` = 该路径，检查 `$DATA/MANIFEST.json` 与 `$DATA/clean/national/{year}_position.csv` 存在。
+- `local_path` 非空：`$DATA` = 该路径，检查 `$DATA/MANIFEST.json` 存在，并记下其中的 `latest_position_year`——它就是本次分析年份（用户另有指定才改）。
 - `local_path` 为空：用户机器上没有本地仓库，**不要做任何前置检查**，直接进入第 5 步运行引擎——引擎会自动从 `remote_manifest_urls` 同步清洗件到 `~/.civil-exam/data`（首次约 50MB，同步进度会打在 stdout）。
 
 当年数据缺失由引擎统一判定并硬失败（exit 2 + JSON 错误信息）。**若引擎报"{year} 年度职位表尚未收录"：原样转告用户"官方约每年 10 月中旬发布 {year} 年度职位表，请先更新数据源，或改用已有年份（如 {latest}）做演练"，绝不拿旧年份表冒充当年分析**——报错岗比不报更糟。
@@ -69,12 +69,24 @@ description: 国考选岗助手：基于官方职位表做硬性条件过滤 + �
 ## 第 5 步：运行引擎
 
 ```bash
-python "<skill目录>/scripts/engine.py" --profile "<工作目录>/profile.json" --year 2027 --out "<工作目录>"
+python "<skill目录>/scripts/engine.py" --profile "<工作目录>/profile.json" --year latest --out "<工作目录>"
 ```
 
-引擎输出（stdout 是 JSON 统计：漏斗数字、Top10、需人工确认数）：`civil_exam_{year}_结果.xlsx` + `civil_exam_{year}_报告.md`。
+- `--year latest`（默认值，可省略）自动取数据仓库 `MANIFEST.json` 的 `latest_position_year`，**不要在文档或命令里写死年份**；用户明确要某年时才传具体数字（该年未收录会 exit 2 硬失败，按报错原样转告）。
+- 可选：`--top N`（默认 30，决定历史画像取样范围）、`--data <数据仓库路径>`（覆盖 `data_source.json`，一台机器多份数据仓库时用）。
 
-**你必须在交付前读 stdout 的统计**：核对「原始总数 → 硬过滤后 → 需人工确认」数字合理，若可报岗位为 0，先检查是画像过严还是引擎排除原因统计，向用户如实报告主要原因分布。
+引擎输出（stdout 是 JSON 统计：漏斗数字、Top10、需人工确认数），三个产物：
+
+- `civil_exam_{year}_报告.html` —— **主交付物**（单文件、零外部依赖、离线可开）：可报岗位全量表格（关键词/省份/层级/机构类别/系统/人数/标记筛选、点表头排序、分页）+ **筛选结果推荐 TOP**（5/10/20，点卡片定位表格行）+ 偏好档位（低/中/高，只改排序不改可报范围）+ 专业待确认 / 历史部门画像 / 落选原因分布 / 历年进面分数（未收录时留空）+ 导出当前筛选结果 CSV。
+- `civil_exam_{year}_结果.xlsx` —— 底稿（可报岗位排序 / Top50详情 / 专业待确认 / 历史部门画像 / 落选统计）。
+- `civil_exam_{year}_报告.md` —— 摘要（漏斗 / Top10 / 报名提醒 / 需人工确认样例 / 口径），详细清单一律看 HTML。
+
+**你必须在交付前读 stdout 的统计**：
+
+- 核对「原始总数 → 硬过滤后 → 需人工确认」数字合理；可报为 0 时先看 `excluded_reasons` 分布，再如实报告主要原因。
+- `major_unresolved_excluded` > 0：这些岗位是因用户专业未在目录中解析而被排除的**非确定性不符**，必须在回复里提示用户去 xlsx「专业待确认」核对专业要求原文后自定。
+- `major_unresolved` 非空：提示用户改用毕业证上的规范专业名重跑，可恢复宽匹配能力。
+- 交付时给出 `outputs.html` 的路径并提示「浏览器直接打开」，它是主交付物；xlsx 是底稿，md 是摘要。
 
 ## 第 6 步：交付与解读
 
